@@ -188,9 +188,6 @@ qui: gen double `ar_depvar_q' = `depvar' - `h0_q' * `treatvar' if `touse'
 qui: reg `ar_depvar_q' `instrvar' `covars' if `touse'
 local ar_t_q = _b[`instrvar'] / _se[`instrvar']
 
-// AR CI at the adjusted h0
-mata: __ivsm_ar_confint(`fs_coef', `fs_se', `rf_coef', `rf_se', `rho', `ar_dof', `alpha')
-
 // RV and XRV for IV
 mata: st_local("rv_iv",  strofreal(__ivsm_rv_iv(`fs_coef', `fs_se', `rf_coef', `rf_se', `rho', `ar_dof', `q', `alpha', `use_min')))
 mata: st_local("xrv_iv", strofreal(__ivsm_xrv_iv(`fs_coef', `fs_se', `rf_coef', `rf_se', `rho', `ar_dof', `q', `alpha', `use_min')))
@@ -751,7 +748,6 @@ end
 
 version 13
 mata:
-mata clear
 mata set matastrict on
 mata set matafavor speed
 
@@ -1158,7 +1154,7 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 							real scalar threshold) {
 	real colvector grid_x, grid_y
 	real matrix contour_grid, cuts
-	real scalar i, j, z, nx, ny, val
+	real scalar i, j, z, nx, ny, val, n_existing
 	string scalar mat_name, toprange_name
 
 	grid_x = rangen(lim_lb, lim_ub, 51)
@@ -1191,15 +1187,16 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 	st_matrix(mat_name, contour_grid)
 
 	// Create Stata variables for plotting
+	n_existing = st_nobs()
 	(void) st_addobs(nx * ny)
 	(void) st_addvar("double", "sense_contour_x")
 	(void) st_addvar("double", "sense_contour_y")
 	(void) st_addvar("double", "sense_contour_z")
 
 	for (i = 1; i <= (nx * ny); i++) {
-		st_store(i, "sense_contour_x", contour_grid[i, 1])
-		st_store(i, "sense_contour_y", contour_grid[i, 2])
-		st_store(i, "sense_contour_z", contour_grid[i, 3])
+		st_store(n_existing + i, "sense_contour_x", contour_grid[i, 1])
+		st_store(n_existing + i, "sense_contour_y", contour_grid[i, 2])
+		st_store(n_existing + i, "sense_contour_z", contour_grid[i, 3])
 	}
 
 	// Compute contour line cut values and label positions
@@ -1232,7 +1229,7 @@ void __ivsm_contour_plot_t(real scalar fs_coef, real scalar fs_se,
 						   real scalar h0) {
 	real colvector grid_x, grid_y
 	real matrix contour_grid, cuts
-	real scalar i, j, z, nx, ny
+	real scalar i, j, z, nx, ny, n_existing
 	real scalar ar_coef, ar_se, bias, adj_e, adj_se, adj_t
 	real colvector diag_vals
 	real scalar clines_actual
@@ -1275,15 +1272,16 @@ void __ivsm_contour_plot_t(real scalar fs_coef, real scalar fs_se,
 
 	st_matrix("__ivsm_contourgrid_t", contour_grid)
 
+	n_existing = st_nobs()
 	(void) st_addobs(nx * ny)
 	(void) st_addvar("double", "sense_contour_x")
 	(void) st_addvar("double", "sense_contour_y")
 	(void) st_addvar("double", "sense_contour_z")
 
 	for (i = 1; i <= (nx * ny); i++) {
-		st_store(i, "sense_contour_x", contour_grid[i, 1])
-		st_store(i, "sense_contour_y", contour_grid[i, 2])
-		st_store(i, "sense_contour_z", contour_grid[i, 3])
+		st_store(n_existing + i, "sense_contour_x", contour_grid[i, 1])
+		st_store(n_existing + i, "sense_contour_y", contour_grid[i, 2])
+		st_store(n_existing + i, "sense_contour_z", contour_grid[i, 3])
 	}
 
 	clines_actual = min((clines, nx - 2))
