@@ -1,0 +1,7 @@
+v 1
+d ivsensemakr: sensitivity analysis for instrumental variable estimates
+d Distribution-Date:   20260207
+d License: GPL-3
+f ivsensemakr.ado
+f ivsensemakr.sthlp
+f card.dta
