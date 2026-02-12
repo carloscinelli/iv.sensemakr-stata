@@ -229,11 +229,11 @@ mata: printf("{txt}  Note: H0 = %6.3f, alpha = %4.2f, df = %5.0f\n", `h0', `alph
 // Sensitivity Statistics
 mata: printf("\n{txt}{hline 65}\n")
 mata: printf("\n{txt}Sensitivity Statistics:\n")
-mata: printf("{txt}  %16s {c |} %10s  %10s  %10s\n", "", "Estimate", "XRV_qa", "RV_qa")
-mata: printf("{txt}  {hline 16}{c +}{hline 36}\n")
-mata: printf("{txt}  %16s {c |} {res}%10.4f  %10.6f  %10.6f\n", "IV", `iv_estimate', `xrv_iv', `rv_iv')
-mata: printf("{txt}  %16s {c |} {res}%10.4f  %10.6f  %10.6f\n", "First-Stage", `fs_coef', `xrv_fs', `rv_fs')
-mata: printf("{txt}  %16s {c |} {res}%10.4f  %10.6f  %10.6f\n", "Reduced-Form", `rf_coef', `xrv_rf', `rv_rf')
+mata: printf("{txt}  %16s  %10s  %10s  %10s\n", "", "Estimate", "XRV_qa", "RV_qa")
+mata: printf("{txt}  {hline 53}\n")
+mata: printf("{txt}  %16s  {res}%10.4f  %10.6f  %10.6f\n", "IV", `iv_estimate', `xrv_iv', `rv_iv')
+mata: printf("{txt}  %16s  {res}%10.4f  %10.6f  %10.6f\n", "First-Stage", `fs_coef', `xrv_fs', `rv_fs')
+mata: printf("{txt}  %16s  {res}%10.4f  %10.6f  %10.6f\n", "Reduced-Form", `rf_coef', `xrv_rf', `rv_rf')
 
 if (`use_min' == 1) {
 	mata: printf("\n{txt}  Note: q >= %3.2f, alpha = %4.2f\n", `q', `alpha')
@@ -284,8 +284,8 @@ if ("`benchmark'" != "") {
 	// IV Bounds
 	// ---------------------------------------------------------------
 	mata: printf("\n{txt}Bounds on Omitted Variable Bias (IV):\n")
-	mata: printf("{txt}  %-15s {c |} %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2y0w.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}  {hline 15}{c +}{hline 48}\n")
+	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2y0w.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}  {hline 63}\n")
 
 	local bench_idx = 0
 	local bench_row_idx = 0
@@ -338,7 +338,7 @@ if ("`benchmark'" != "") {
 			local __ivsm_blbl_`bench_row_idx' "`blabel'"
 
 			// Print
-			mata: printf("{txt}  %-15s {c |} {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+			mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
 				substr("`blabel'", 1, 15), `bound_r2zw_x', `bound_r2y0w_zx', `bound_lwr', `bound_upr')
 
 			// Store in matrix
@@ -366,8 +366,8 @@ if ("`benchmark'" != "") {
 	// FS Bounds (standard OLS sensemakr on FS model, treatment = z)
 	// ---------------------------------------------------------------
 	mata: printf("\n{txt}Bounds on Omitted Variable Bias (First-Stage):\n")
-	mata: printf("{txt}  %-15s {c |} %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2dw.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}  {hline 15}{c +}{hline 48}\n")
+	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2dw.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}  {hline 63}\n")
 
 	// For FS: "outcome" is d (treatment), "treatment" is z (instrument)
 	// kd_fs = kz, ky_fs = kd (parameter mapping from R code)
@@ -405,7 +405,7 @@ if ("`benchmark'" != "") {
 				local blabel = "`kz_val'/`kd_val'x `bench'"
 			}
 
-			mata: printf("{txt}  %-15s {c |} {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+			mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
 				substr("`blabel'", 1, 15), `ols_r2dz_x', `ols_r2yz_dx', `ols_lwr', `ols_upr')
 
 			if (`bench_idx' == 1 & `ki' == 1) {
@@ -422,8 +422,8 @@ if ("`benchmark'" != "") {
 	// RF Bounds (standard OLS sensemakr on RF model, treatment = z)
 	// ---------------------------------------------------------------
 	mata: printf("\n{txt}Bounds on Omitted Variable Bias (Reduced-Form):\n")
-	mata: printf("{txt}  %-15s {c |} %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2yw.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}  {hline 15}{c +}{hline 48}\n")
+	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2yw.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}  {hline 63}\n")
 
 	// For RF: "outcome" is y, "treatment" is z
 	// kd_rf = kz, ky_rf = ky (parameter mapping from R code)
@@ -460,7 +460,7 @@ if ("`benchmark'" != "") {
 				local blabel = "`kz_val'/`ky_val'x `bench'"
 			}
 
-			mata: printf("{txt}  %-15s {c |} {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+			mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
 				substr("`blabel'", 1, 15), `ols_r2dz_x', `ols_r2yz_dx', `ols_lwr', `ols_upr')
 
 			if (`bench_idx' == 1 & `ki' == 1) {
@@ -496,11 +496,18 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 		local round_obs : di %5.3f `obs_val'
 		local thresh_idx = scalar(__ivsm_threshold_idx)
 		local nlevels = scalar(__ivsm_nlevels)
+		local lwr_has_inf = scalar(__ivsm_has_inf)
+
+		// For lower CI with blow-ups: lowest level = "-Inf" boundary (red dashed)
+		local inf_idx = .
+		if (`lwr_has_inf') {
+			local inf_idx = 1
+		}
 
 		// Build twoway line command programmatically
 		local plot_cmd ""
 		forvalues k = 1(1)`nlevels' {
-			if (`k' == `thresh_idx') {
+			if (`k' == `thresh_idx' | `k' == `inf_idx') {
 				local plot_cmd `"`plot_cmd' (line __cl_y __cl_x if __cl_lev == `k', lcolor(red) lpattern(dash) lwidth(medthick))"'
 			}
 			else {
@@ -515,11 +522,15 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 			local ly = __ivsm_labels[`k', 3]
 			local lval = __ivsm_labels[`k', 4]
 			if (`lx' < . & `lx' > 0.003) {
-				local lval_round : di %5.3f `lval'
-				if (`k' == `thresh_idx') {
+				if (`k' == `inf_idx') {
+					local label_cmd `"`label_cmd' (scatteri `ly' `lx' "-Inf", msymbol(none) mlabsize(vsmall) mlabcolor(red) mlabposition(3))"'
+				}
+				else if (`k' == `thresh_idx') {
+					local lval_round : di %5.3f `lval'
 					local label_cmd `"`label_cmd' (scatteri `ly' `lx' "`lval_round'", msymbol(none) mlabsize(vsmall) mlabcolor(red) mlabposition(3))"'
 				}
 				else {
+					local lval_round : di %5.3f `lval'
 					local label_cmd `"`label_cmd' (scatteri `ly' `lx' "`lval_round'", msymbol(none) mlabsize(vsmall) mlabcolor(gs6) mlabposition(3))"'
 				}
 			}
@@ -546,7 +557,7 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 
 		twoway `plot_cmd' `label_cmd' `obs_cmd' `bench_cmd', ///
 			name(__ivsm_lwr_plot, replace) nodraw ///
-			legend(off) ///
+			legend(off) aspectratio(1) ///
 			xlab(, labsize(small)) ylab(, labsize(small)) ///
 			xscale(range(0 `lim_ub')) yscale(range(0 `lim_ub')) ///
 			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
@@ -626,7 +637,7 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 
 		twoway `plot_cmd' `label_cmd' `obs_cmd' `bench_cmd', ///
 			name(__ivsm_upr_plot, replace) nodraw ///
-			legend(off) ///
+			legend(off) aspectratio(1) ///
 			xlab(, labsize(small)) ylab(, labsize(small)) ///
 			xscale(range(0 `lim_ub')) yscale(range(0 `lim_ub')) ///
 			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
@@ -710,7 +721,7 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 
 		twoway `plot_cmd' `label_cmd' `obs_cmd' `bench_cmd', ///
 			name(__ivsm_t_plot, replace) nodraw ///
-			legend(off) ///
+			legend(off) aspectratio(1) ///
 			xlab(, labsize(small)) ylab(, labsize(small)) ///
 			xscale(range(0 `lim_ub')) yscale(range(0 `lim_ub')) ///
 			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
