@@ -204,63 +204,7 @@ mata: st_local("xrv_rf", strofreal(__ivsm_xrv_ols(`rf_t', `rf_dof', 1, `alpha'))
 // Step 5: Print output tables
 // =========================================================================
 
-// Header
-mata: printf("\n{txt}Sensitivity Analysis for Instrumental Variables\n")
-mata: printf("{txt}(Anderson-Rubin Approach)\n")
-mata: printf("{txt}{hline 65}\n")
-
-// IV Estimates
-mata: printf("\n{txt}IV Estimates:\n")
-mata: printf("{txt}  Coef. Estimate: {res}%10.4f\n", `iv_estimate')
-if ("`ar_ci_type'" == "bounded") {
-	mata: printf("{txt}  Conf. Interval: {res}[%7.4f, %7.4f]\n", `ar_ci_lwr', `ar_ci_upr')
-}
-else if ("`ar_ci_type'" == "disjoint") {
-	mata: printf("{txt}  Conf. Interval: {res}(-inf, %7.4f] U [%7.4f, +inf)\n", `ar_ci_lwr', `ar_ci_upr')
-}
-else if ("`ar_ci_type'" == "all_reals") {
-	mata: printf("{txt}  Conf. Interval: {res}(-inf, +inf)\n")
-}
-else {
-	mata: printf("{txt}  Conf. Interval: {res}Empty set\n")
-}
-mata: printf("{txt}  Note: H0 = %6.3f, alpha = %4.2f, df = %5.0f\n", `h0', `alpha', `ar_dof')
-
-// Sensitivity Statistics
-mata: printf("\n{txt}{hline 65}\n")
-mata: printf("\n{txt}Sensitivity Statistics:\n")
-mata: printf("{txt}  %16s  %10s  %10s  %10s\n", "", "Estimate", "XRV_qa", "RV_qa")
-mata: printf("{txt}  {hline 53}\n")
-mata: printf("{txt}  %16s  {res}%10.4f  %10.6f  %10.6f\n", "IV", `iv_estimate', `xrv_iv', `rv_iv')
-mata: printf("{txt}  %16s  {res}%10.4f  %10.6f  %10.6f\n", "First-Stage", `fs_coef', `xrv_fs', `rv_fs')
-mata: printf("{txt}  %16s  {res}%10.4f  %10.6f  %10.6f\n", "Reduced-Form", `rf_coef', `xrv_rf', `rv_rf')
-
-if (`use_min' == 1) {
-	mata: printf("\n{txt}  Note: q >= %3.2f, alpha = %4.2f\n", `q', `alpha')
-}
-else {
-	mata: printf("\n{txt}  Note: q = %3.2f, alpha = %4.2f\n", `q', `alpha')
-}
-
-// First-Stage and Reduced-Form detail
-if ("`suppress'" == "") {
-	mata: printf("\n{txt}{hline 65}\n")
-	mata: printf("\n{txt}First-Stage Estimates (D ~ Z | X):\n")
-	mata: printf("{txt}  Coef. Estimate: {res}%10.4f\n", `fs_coef')
-	mata: printf("{txt}  Standard Error: {res}%10.4f\n", `fs_se')
-	mata: printf("{txt}  t-value:        {res}%10.4f\n", `fs_t')
-	mata: printf("{txt}  p-value:        {res}%10.6f\n", `fs_p')
-	mata: printf("{txt}  Conf. Interval: {res}[%7.4f, %7.4f]\n", `fs_lwr', `fs_upr')
-
-	mata: printf("\n{txt}Reduced-Form Estimates (Y ~ Z | X):\n")
-	mata: printf("{txt}  Coef. Estimate: {res}%10.4f\n", `rf_coef')
-	mata: printf("{txt}  Standard Error: {res}%10.4f\n", `rf_se')
-	mata: printf("{txt}  t-value:        {res}%10.4f\n", `rf_t')
-	mata: printf("{txt}  p-value:        {res}%10.6f\n", `rf_p')
-	mata: printf("{txt}  Conf. Interval: {res}[%7.4f, %7.4f]\n", `rf_lwr', `rf_upr')
-}
-
-mata: printf("{txt}{hline 65}\n")
+// Output is organized per estimate: IV, FS, RF (deferred to after bounds computation)
 
 // =========================================================================
 // Step 6: Benchmark bounds
@@ -283,10 +227,6 @@ if ("`benchmark'" != "") {
 	// ---------------------------------------------------------------
 	// IV Bounds
 	// ---------------------------------------------------------------
-	mata: printf("\n{txt}Bounds on Omitted Variable Bias (IV):\n")
-	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2y0w.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}  {hline 63}\n")
-
 	local bench_idx = 0
 	local bench_row_idx = 0
 	foreach bench of local benchmark {
@@ -337,10 +277,6 @@ if ("`benchmark'" != "") {
 			local bench_row_idx = `bench_row_idx' + 1
 			local __ivsm_blbl_`bench_row_idx' "`blabel'"
 
-			// Print
-			mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
-				substr("`blabel'", 1, 15), `bound_r2zw_x', `bound_r2y0w_zx', `bound_lwr', `bound_upr')
-
 			// Store in matrix
 			if (`bench_idx' == 1 & `ki' == 1) {
 				mat __ivsm_bounds_iv = (`kz_val', `ky_val', `bound_r2zw_x', `bound_r2y0w_zx', `bound_lwr', `bound_upr')
@@ -365,10 +301,6 @@ if ("`benchmark'" != "") {
 	// ---------------------------------------------------------------
 	// FS Bounds (standard OLS sensemakr on FS model, treatment = z)
 	// ---------------------------------------------------------------
-	mata: printf("\n{txt}Bounds on Omitted Variable Bias (First-Stage):\n")
-	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2dw.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}  {hline 63}\n")
-
 	// For FS: "outcome" is d (treatment), "treatment" is z (instrument)
 	// kd_fs = kz, ky_fs = kd (parameter mapping from R code)
 	qui: estimates restore __ivsm_fs
@@ -405,9 +337,6 @@ if ("`benchmark'" != "") {
 				local blabel = "`kz_val'/`kd_val'x `bench'"
 			}
 
-			mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
-				substr("`blabel'", 1, 15), `ols_r2dz_x', `ols_r2yz_dx', `ols_lwr', `ols_upr')
-
 			if (`bench_idx' == 1 & `ki' == 1) {
 				mat __ivsm_bounds_fs = (`kz_val', `kd_val', `ols_r2dz_x', `ols_r2yz_dx', `ols_lwr', `ols_upr')
 			}
@@ -421,10 +350,6 @@ if ("`benchmark'" != "") {
 	// ---------------------------------------------------------------
 	// RF Bounds (standard OLS sensemakr on RF model, treatment = z)
 	// ---------------------------------------------------------------
-	mata: printf("\n{txt}Bounds on Omitted Variable Bias (Reduced-Form):\n")
-	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2yw.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}  {hline 63}\n")
-
 	// For RF: "outcome" is y, "treatment" is z
 	// kd_rf = kz, ky_rf = ky (parameter mapping from R code)
 	qui: estimates restore __ivsm_rf
@@ -460,9 +385,6 @@ if ("`benchmark'" != "") {
 				local blabel = "`kz_val'/`ky_val'x `bench'"
 			}
 
-			mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
-				substr("`blabel'", 1, 15), `ols_r2dz_x', `ols_r2yz_dx', `ols_lwr', `ols_upr')
-
 			if (`bench_idx' == 1 & `ki' == 1) {
 				mat __ivsm_bounds_rf = (`kz_val', `ky_val', `ols_r2dz_x', `ols_r2yz_dx', `ols_lwr', `ols_upr')
 			}
@@ -472,9 +394,133 @@ if ("`benchmark'" != "") {
 		}
 	}
 	matrix colnames __ivsm_bounds_rf = "kz" "ky" "r2zw_x" "r2yw_zx" "lower_CI" "upper_CI"
-
-	mata: printf("\n{txt}{hline 65}\n")
 }
+
+// =========================================================================
+// Step 6b: Print output organized by estimate (IV, FS, RF)
+// =========================================================================
+
+mata: printf("\n{txt}Sensitivity Analysis for Instrumental Variables\n")
+mata: printf("{txt}(Anderson-Rubin Approach)\n")
+mata: printf("{txt}{hline 65}\n")
+
+// --- IV Section ---
+mata: printf("{txt}IV Estimates ({res}`depvar'{txt} ~ {res}`treatvar'{txt} | {res}`instrvar'{txt}, {res}`covars'{txt}):\n")
+mata: printf("{txt}  Coef. Estimate:  {res}%7.4f\n", `iv_estimate')
+
+// IV CI (handle different types)
+if ("`ar_ci_type'" == "bounded") {
+	mata: printf("{txt}  Conf. Interval:  {res}[%7.4f, %7.4f]\n", `ar_ci_lwr', `ar_ci_upr')
+}
+else if ("`ar_ci_type'" == "disjoint") {
+	mata: printf("{txt}  Conf. Interval:  {res}(-Inf, %7.4f] U [%7.4f, +Inf)\n", `ar_ci_lwr', `ar_ci_upr')
+}
+else if ("`ar_ci_type'" == "all_reals") {
+	mata: printf("{txt}  Conf. Interval:  {res}(-Inf, +Inf)\n")
+}
+else if ("`ar_ci_type'" == "empty") {
+	mata: printf("{txt}  Conf. Interval:  {res}Empty Set\n")
+}
+
+mata: printf("\n")
+mata: printf("{txt}  Sensitivity Statistics:\n")
+mata: printf("{txt}    Extreme Robustness Value:  {res}%7.4f\n", `xrv_iv')
+mata: printf("{txt}    Robustness Value:          {res}%7.4f\n", `rv_iv')
+
+if ("`benchmark'" != "") {
+	mata: printf("\n")
+	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
+	mata: printf("{txt}    %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2y0w.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}    {hline 63}\n")
+	local iv_nrows = rowsof(__ivsm_bounds_iv)
+	forvalues i = 1(1)`iv_nrows' {
+		local blabel "`__ivsm_blbl_`i''"
+		local b_c3 = __ivsm_bounds_iv[`i', 3]
+		local b_c4 = __ivsm_bounds_iv[`i', 4]
+		local b_c5 = __ivsm_bounds_iv[`i', 5]
+		local b_c6 = __ivsm_bounds_iv[`i', 6]
+		mata: printf("{txt}    %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+			substr("`blabel'", 1, 15), `b_c3', `b_c4', `b_c5', `b_c6')
+	}
+}
+
+mata: printf("\n")
+if (`use_min') {
+	mata: printf("{txt}  Note: H0 = %g, q >= %g, alpha = %g, df = %g.\n", `h0', `q', `alpha', `ar_dof')
+}
+else {
+	mata: printf("{txt}  Note: H0 = %g, q = %g, alpha = %g, df = %g.\n", `h0', `q', `alpha', `ar_dof')
+}
+
+// --- FS Section ---
+mata: printf("{txt}{hline 65}\n")
+mata: printf("{txt}First-Stage Estimates ({res}`treatvar'{txt} ~ {res}`instrvar'{txt} | {res}`covars'{txt}):\n")
+mata: printf("{txt}  Coef. Estimate:  {res}%7.4f\n", `fs_coef')
+mata: printf("{txt}  Standard Error:  {res}%7.4f\n", `fs_se')
+mata: printf("{txt}  t-value:         {res}%7.4f\n", `fs_t')
+mata: printf("{txt}  p-value:         {res}%7.4f\n", `fs_p')
+mata: printf("{txt}  Conf. Interval:  {res}[%7.4f, %7.4f]\n", `fs_lwr', `fs_upr')
+
+mata: printf("\n")
+mata: printf("{txt}  Sensitivity Statistics:\n")
+mata: printf("{txt}    Extreme Robustness Value:  {res}%7.4f\n", `xrv_fs')
+mata: printf("{txt}    Robustness Value:          {res}%7.4f\n", `rv_fs')
+
+if ("`benchmark'" != "") {
+	mata: printf("\n")
+	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
+	mata: printf("{txt}    %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2dw.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}    {hline 63}\n")
+	local fs_nrows = rowsof(__ivsm_bounds_fs)
+	forvalues i = 1(1)`fs_nrows' {
+		local blabel "`__ivsm_blbl_`i''"
+		local b_c3 = __ivsm_bounds_fs[`i', 3]
+		local b_c4 = __ivsm_bounds_fs[`i', 4]
+		local b_c5 = __ivsm_bounds_fs[`i', 5]
+		local b_c6 = __ivsm_bounds_fs[`i', 6]
+		mata: printf("{txt}    %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+			substr("`blabel'", 1, 15), `b_c3', `b_c4', `b_c5', `b_c6')
+	}
+}
+
+mata: printf("\n")
+mata: printf("{txt}  Note: H0 = 0, q = 1, alpha = %g, df = %g.\n", `alpha', `fs_dof')
+
+// --- RF Section ---
+mata: printf("{txt}{hline 65}\n")
+mata: printf("{txt}Reduced-Form Estimates ({res}`depvar'{txt} ~ {res}`instrvar'{txt} | {res}`covars'{txt}):\n")
+mata: printf("{txt}  Coef. Estimate:  {res}%7.4f\n", `rf_coef')
+mata: printf("{txt}  Standard Error:  {res}%7.4f\n", `rf_se')
+mata: printf("{txt}  t-value:         {res}%7.4f\n", `rf_t')
+mata: printf("{txt}  p-value:         {res}%7.4f\n", `rf_p')
+mata: printf("{txt}  Conf. Interval:  {res}[%7.4f, %7.4f]\n", `rf_lwr', `rf_upr')
+
+mata: printf("\n")
+mata: printf("{txt}  Sensitivity Statistics:\n")
+mata: printf("{txt}    Extreme Robustness Value:  {res}%7.4f\n", `xrv_rf')
+mata: printf("{txt}    Robustness Value:          {res}%7.4f\n", `rv_rf')
+
+if ("`benchmark'" != "") {
+	mata: printf("\n")
+	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
+	mata: printf("{txt}    %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2yw.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}    {hline 63}\n")
+	local rf_nrows = rowsof(__ivsm_bounds_rf)
+	forvalues i = 1(1)`rf_nrows' {
+		local blabel "`__ivsm_blbl_`i''"
+		local b_c3 = __ivsm_bounds_rf[`i', 3]
+		local b_c4 = __ivsm_bounds_rf[`i', 4]
+		local b_c5 = __ivsm_bounds_rf[`i', 5]
+		local b_c6 = __ivsm_bounds_rf[`i', 6]
+		mata: printf("{txt}    %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+			substr("`blabel'", 1, 15), `b_c3', `b_c4', `b_c5', `b_c6')
+	}
+}
+
+mata: printf("\n")
+mata: printf("{txt}  Note: H0 = 0, q = 1, alpha = %g, df = %g.\n", `alpha', `rf_dof')
+mata: printf("{txt}{hline 65}\n")
+mata: printf("\n")
 
 // =========================================================================
 // Step 7: Contour plots
