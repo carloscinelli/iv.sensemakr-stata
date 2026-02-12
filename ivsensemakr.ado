@@ -494,31 +494,49 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 		local obs_val = scalar(__ivsm_obs_value)
 		local round_obs : di %5.3f `obs_val'
 
-		// Build single contourline with all levels + threshold
-		local all_cuts ""
-		local all_colors ""
-		local all_patterns ""
-		local all_widths ""
+		// Draw threshold contour first (red dashed)
+		local thresh_round : di %6.3f `h0_q'
+		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+			name(__ivsm_lwr_plot, replace) ccuts(`h0_q') ccolor(red) clpattern(dash) clwidths(medthick) nodraw ///
+			xlab(, labsize(small)) ylab(, labsize(small)) ///
+			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
+			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
+			title("Lower CI Limit", size(medium)) ///
+			legend(off) ///
+			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3)
+
+		// Add threshold label on diagonal
 		local ncuts = rowsof(toprange_lwr)
 		forvalues i = 1(1)`ncuts' {
-			local cutvalue = toprange_lwr[`i', 1]
-			local skip = 0
-			if (abs(`cutvalue' - `h0_q') < 0.005) local skip = 1
-			if (`skip' == 0) {
-				local all_cuts "`all_cuts' `cutvalue'"
-				local all_colors "`all_colors' black"
-				local all_patterns "`all_patterns' solid"
-				local all_widths "`all_widths' thin"
+			local cutvalue = toprange_lwr[`i', 3]
+			if (abs(`cutvalue' - `h0_q') < 0.005) {
+				local diag_pos = toprange_lwr[`i', 2]
+				if (`diag_pos' < . & `diag_pos' > 0) {
+					local label_pos = `diag_pos' + 0.001
+					__ivsm_addplot __ivsm_lwr_plot: scatteri `label_pos' `label_pos' "`thresh_round'", msymbol(none) mlabsize(vsmall) mlabcolor(red) mlabposition(3) mcolor(none)
+				}
 			}
 		}
-		// Add threshold as last level
-		local all_cuts "`all_cuts' `h0_q'"
-		local all_colors "`all_colors' red"
-		local all_patterns "`all_patterns' dash"
-		local all_widths "`all_widths' medthick"
 
-		// Build scatter overlay for benchmarks
-		local bench_scatter ""
+		// Add other contour levels one at a time (black solid, thin)
+		local gap = abs(`h0_q') * 0.3
+		if (`gap' < 0.005) local gap = 0.005
+		forvalues i = 1(1)`ncuts' {
+			local cutvalue = toprange_lwr[`i', 3]
+			local diag_pos = toprange_lwr[`i', 2]
+			// Skip if too close to threshold
+			if (abs(`cutvalue' - `h0_q') < `gap') continue
+			local cutvalue_round : di %6.3f `cutvalue'
+			__ivsm_addplot __ivsm_lwr_plot: contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+				ccuts(`cutvalue') ccolor(black) clwidths(vthin)
+			// Add label on diagonal if crossing found
+			if (`diag_pos' < . & `diag_pos' > 0.005) {
+				local label_pos = `diag_pos' + 0.001
+				__ivsm_addplot __ivsm_lwr_plot: scatteri `label_pos' `label_pos' "`cutvalue_round'", msymbol(none) mlabsize(vsmall) mlabcolor(black) mlabposition(3) mcolor(none)
+			}
+		}
+
+		// Add benchmark points
 		if ("`benchmark'" != "") {
 			local dim = rowsof(__ivsm_bounds_iv)
 			forvalues idx = 1(1)`dim' {
@@ -528,20 +546,11 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 				local coef_val : di %5.3f `coef_val'
 				local blbl "`__ivsm_blbl_`idx''"
 				if (`r2yz_val' < `lim_ub' & `r2dz_val' < `lim_ub') {
-					local bench_scatter "`bench_scatter' || scatteri `r2yz_val' `r2dz_val' `"`blbl' (`coef_val')"', mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)"
+					__ivsm_addplot __ivsm_lwr_plot: scatteri `r2yz_val' `r2dz_val' `"`blbl' (`coef_val')"', ///
+						mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)
 				}
 			}
 		}
-
-		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-			name(__ivsm_lwr_plot, replace) ccuts(`all_cuts') ccolor(`all_colors') clpattern(`all_patterns') clwidths(`all_widths') nodraw ///
-			xlab(, labsize(small)) ylab(, labsize(small)) ///
-			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
-			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
-			title("Lower CI Limit", size(medium)) ///
-			legend(off) ///
-			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3) ///
-			`bench_scatter'
 
 		capture: drop sense_contour_*
 		capture: mat drop toprange_lwr
@@ -553,29 +562,57 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 		capture: graph drop __ivsm_upr_plot
 		local obs_val = scalar(__ivsm_obs_value)
 		local round_obs : di %5.3f `obs_val'
+		local upr_has_inf = scalar(__ivsm_has_inf)
 
-		local all_cuts ""
-		local all_colors ""
-		local all_patterns ""
-		local all_widths ""
+		// For upper CI with blow-ups: use highest contour level as "Inf" boundary
 		local ncuts = rowsof(toprange_upr)
-		forvalues i = 1(1)`ncuts' {
-			local cutvalue = toprange_upr[`i', 1]
-			local skip = 0
-			if (abs(`cutvalue' - `h0_q') < 0.005) local skip = 1
-			if (`skip' == 0) {
-				local all_cuts "`all_cuts' `cutvalue'"
-				local all_colors "`all_colors' black"
-				local all_patterns "`all_patterns' solid"
-				local all_widths "`all_widths' thin"
+		if (`upr_has_inf') {
+			// Highest contour level = Inf boundary (red dashed)
+			local inf_level = toprange_upr[`ncuts', 3]
+			twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+				name(__ivsm_upr_plot, replace) ccuts(`inf_level') ccolor(red) clpattern(dash) clwidths(medthick) nodraw ///
+				xlab(, labsize(small)) ylab(, labsize(small)) ///
+				ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
+				xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
+				title("Upper CI Limit", size(medium)) ///
+				legend(off) ///
+				|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3)
+			// Add "Inf" label
+			local diag_pos = toprange_upr[`ncuts', 2]
+			if (`diag_pos' < . & `diag_pos' > 0.005) {
+				local label_pos = `diag_pos' + 0.001
+				__ivsm_addplot __ivsm_upr_plot: scatteri `label_pos' `label_pos' "Inf", msymbol(none) mlabsize(vsmall) mlabcolor(red) mlabposition(3) mcolor(none)
 			}
 		}
-		local all_cuts "`all_cuts' `h0_q'"
-		local all_colors "`all_colors' red"
-		local all_patterns "`all_patterns' dash"
-		local all_widths "`all_widths' medthick"
+		else {
+			// No blow-ups: use threshold as on lower CI
+			twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+				name(__ivsm_upr_plot, replace) ccuts(`h0_q') ccolor(red) clpattern(dash) clwidths(medthick) nodraw ///
+				xlab(, labsize(small)) ylab(, labsize(small)) ///
+				ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
+				xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
+				title("Upper CI Limit", size(medium)) ///
+				legend(off) ///
+				|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3)
+		}
 
-		local bench_scatter ""
+		// Add other contour levels one at a time (skip the Inf level and threshold)
+		forvalues i = 1(1)`ncuts' {
+			local cutvalue = toprange_upr[`i', 3]
+			local diag_pos = toprange_upr[`i', 2]
+			// Skip threshold and Inf level
+			if (abs(`cutvalue' - `h0_q') < `gap') continue
+			if (`upr_has_inf' & `i' == `ncuts') continue
+			local cutvalue_round : di %5.3f `cutvalue'
+			__ivsm_addplot __ivsm_upr_plot: contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+				ccuts(`cutvalue') ccolor(black) clwidths(vthin)
+			if (`diag_pos' < . & `diag_pos' > 0.005) {
+				local label_pos = `diag_pos' + 0.001
+				__ivsm_addplot __ivsm_upr_plot: scatteri `label_pos' `label_pos' "`cutvalue_round'", msymbol(none) mlabsize(vsmall) mlabcolor(black) mlabposition(3) mcolor(none)
+			}
+		}
+
+		// Add benchmark points
 		if ("`benchmark'" != "") {
 			local dim = rowsof(__ivsm_bounds_iv)
 			forvalues idx = 1(1)`dim' {
@@ -585,20 +622,11 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 				local coef_val : di %5.3f `coef_val'
 				local blbl "`__ivsm_blbl_`idx''"
 				if (`r2yz_val' < `lim_ub' & `r2dz_val' < `lim_ub') {
-					local bench_scatter "`bench_scatter' || scatteri `r2yz_val' `r2dz_val' `"`blbl' (`coef_val')"', mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)"
+					__ivsm_addplot __ivsm_upr_plot: scatteri `r2yz_val' `r2dz_val' `"`blbl' (`coef_val')"', ///
+						mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)
 				}
 			}
 		}
-
-		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-			name(__ivsm_upr_plot, replace) ccuts(`all_cuts') ccolor(`all_colors') clpattern(`all_patterns') clwidths(`all_widths') nodraw ///
-			xlab(, labsize(small)) ylab(, labsize(small)) ///
-			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
-			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
-			title("Upper CI Limit", size(medium)) ///
-			legend(off) ///
-			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3) ///
-			`bench_scatter'
 
 		capture: drop sense_contour_*
 		capture: mat drop toprange_upr
@@ -625,30 +653,48 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 		local round_h0 : di %6.3f `h0_q'
 		local obs_val = scalar(__ivsm_obs_value)
 		local round_obs : di %5.3f `obs_val'
+		local t_crit_round : di %5.3f `t_crit'
 
-		local all_cuts ""
-		local all_colors ""
-		local all_patterns ""
-		local all_widths ""
+		// Draw threshold contour first (red dashed)
+		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+			name(__ivsm_t_plot, replace) ccuts(`t_crit') ccolor(red) clpattern(dash) clwidths(medthick) nodraw ///
+			xlab(, labsize(small)) ylab(, labsize(small)) ///
+			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
+			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
+			title("t-value for H0 = `round_h0'", size(medium)) ///
+			legend(off) ///
+			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3)
+
+		// Add threshold label
 		local ncuts = rowsof(toprange_t)
 		forvalues i = 1(1)`ncuts' {
-			local cutvalue = toprange_t[`i', 1]
-			local skip = 0
-			if (abs(`cutvalue' - `t_crit') < 0.05) local skip = 1
-			if (`skip' == 0) {
-				local all_cuts "`all_cuts' `cutvalue'"
-				local all_colors "`all_colors' black"
-				local all_patterns "`all_patterns' solid"
-				local all_widths "`all_widths' thin"
+			local cutvalue = toprange_t[`i', 3]
+			if (abs(`cutvalue' - `t_crit') < 0.05) {
+				local diag_pos = toprange_t[`i', 2]
+				if (`diag_pos' < . & `diag_pos' > 0) {
+					local label_pos = `diag_pos' + 0.001
+					__ivsm_addplot __ivsm_t_plot: scatteri `label_pos' `label_pos' "`t_crit_round'", msymbol(none) mlabsize(vsmall) mlabcolor(red) mlabposition(3) mcolor(none)
+				}
 			}
 		}
-		local all_cuts "`all_cuts' `t_crit'"
-		local all_colors "`all_colors' red"
-		local all_patterns "`all_patterns' dash"
-		local all_widths "`all_widths' medthick"
 
-		// Build scatter overlay for benchmarks
-		local bench_scatter ""
+		// Add other contour levels
+		local gap_t = abs(`t_crit') * 0.15
+		if (`gap_t' < 0.1) local gap_t = 0.1
+		forvalues i = 1(1)`ncuts' {
+			local cutvalue = toprange_t[`i', 3]
+			local diag_pos = toprange_t[`i', 2]
+			if (abs(`cutvalue' - `t_crit') < `gap_t') continue
+			local cutvalue_round : di %5.3f `cutvalue'
+			__ivsm_addplot __ivsm_t_plot: contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+				ccuts(`cutvalue') ccolor(black) clwidths(vthin)
+			if (`diag_pos' < . & `diag_pos' > 0.005) {
+				local label_pos = `diag_pos' + 0.001
+				__ivsm_addplot __ivsm_t_plot: scatteri `label_pos' `label_pos' "`cutvalue_round'", msymbol(none) mlabsize(vsmall) mlabcolor(black) mlabposition(3) mcolor(none)
+			}
+		}
+
+		// Add benchmark points
 		if ("`benchmark'" != "") {
 			local dim = rowsof(__ivsm_bounds_iv)
 			forvalues idx = 1(1)`dim' {
@@ -659,20 +705,11 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 				local bench_upr = __ivsm_bounds_iv[`idx', 6]
 				local bench_t : di %5.3f (`bench_lwr' + `bench_upr') / 2
 				if (`r2yz_val' < `lim_ub' & `r2dz_val' < `lim_ub') {
-					local bench_scatter "`bench_scatter' || scatteri `r2yz_val' `r2dz_val' `"`blbl' (`bench_t')"', mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)"
+					__ivsm_addplot __ivsm_t_plot: scatteri `r2yz_val' `r2dz_val' `"`blbl' (`bench_t')"', ///
+						mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)
 				}
 			}
 		}
-
-		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-			name(__ivsm_t_plot, replace) ccuts(`all_cuts') ccolor(`all_colors') clpattern(`all_patterns') clwidths(`all_widths') nodraw ///
-			xlab(, labsize(small)) ylab(, labsize(small)) ///
-			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
-			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
-			title("t-value for H0 = `round_h0'", size(medium)) ///
-			legend(off) ///
-			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3) ///
-			`bench_scatter'
 
 		graph display __ivsm_t_plot
 
@@ -742,60 +779,6 @@ capture: estimates drop __ivsm_fs
 capture: estimates drop __ivsm_rf
 capture: estimates drop __ivsm_z_model
 
-end
-
-
-// =========================================================================
-// Addplot helper (modified from Ben Jann)
-// =========================================================================
-program __ivsm_addplot
-*! modified version of program written by Ben Jann
-	version 9
-	local caller : di _caller()
-	_on_colon_parse `0'
-	local plots `"`s(before)'"'
-	local cmd   `"`s(after)'"'
-	gettoken name : plots
-	capt confirm name `name'
-	if _rc == 0 {
-		gettoken name plots : plots
-	}
-	else local name
-	if `"`plots'"' != "" {
-		numlist `"`plots'"', integer range(>=1)
-		local plots `r(numlist)'
-	}
-	if `"`name'"' == "" {
-		gr_current name :
-	}
-	else {
-		capt classutil d `name'
-	}
-	if `"`plots'"' == "" {
-		local grtype `"`.`name'.graphfamily'"'
-		if `"`grtype'"' == "twoway" {
-			version `caller': .`name'.parse `cmd'
-			exit
-		}
-		local nplots `"`.`name'.n'"'
-		capt confirm integer number `nplots'
-		if _rc == 0 {
-			forv plot = 1/`nplots' {
-				if `"`.`name'.graphs[`plot'].graphfamily'"' == "twoway" {
-					local plots `plots' `plot'
-				}
-			}
-		}
-	}
-	else {
-		foreach plot of local plots {
-			capt classutil d `name'.graphs[`plot']
-			local grtype `"`.`name'.graphs[`plot'].graphfamily'"'
-		}
-	}
-	foreach plot of local plots {
-		version `caller': .`name'.graphs[`plot'].parse `cmd'
-	}
 end
 
 
@@ -1217,8 +1200,8 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 	real colvector a_vec, b_vec, c_vec, delta_vec, result
 	real colvector r2y_adj, cap_mask
 
-	nx = 50
-	ny = 50
+	nx = 100
+	ny = 100
 	n_total = nx * ny
 
 	grid_x = rangen(lim_lb, lim_ub, nx)
@@ -1303,22 +1286,47 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 	st_store((n_existing + 1::n_existing + n_total), "sense_contour_z", contour_grid[., 3])
 
 	// Compute contour levels using quantiles (matching R)
-	real colvector finite_z, quantile_probs, raw_levels, cuts
-	real scalar clines_actual, n_finite
+	// For upper CI, z-values blow up; clip to a sensible range
+	real colvector finite_z, clipped_z, quantile_probs, raw_levels, cuts
+	real scalar clines_actual, n_finite, n_clipped
+	real scalar clip_lo, clip_hi, obs_value, has_inf
 
 	clines_actual = min((clines, nx - 2))
 
+	// Get observed value at (0,0) for anchoring level range
+	obs_value = __ivsm_iv_adjusted_limit(fs_coef, fs_se, rf_coef, rf_se,
+										  rho, dof, 0, 0, alpha, ci_limit)
+
 	finite_z = select(contour_grid[., 3], contour_grid[., 3] :< .)
+	has_inf = (length(finite_z) < n_total)  // some grid points are missing/inf
 	n_finite = length(finite_z)
 	if (n_finite > 0) {
 		finite_z = sort(finite_z, 1)
-		quantile_probs = rangen(0, 1, max((2, clines_actual)))
-		raw_levels = J(length(quantile_probs), 1, .)
-		for (i = 1; i <= length(quantile_probs); i++) {
-			raw_levels[i] = finite_z[max((1, ceil(quantile_probs[i] * n_finite)))]
+
+		// Clip range: use observed value as anchor
+		// For upper CI where values blow up, clip at ~3x the observed value
+		// For lower CI, use 1st-99th percentile
+		if (has_inf & ci_limit == "upr" & obs_value < . & obs_value > 0) {
+			clip_hi = max((obs_value * 4, 1))
+			clip_lo = finite_z[max((1, ceil(0.01 * n_finite)))]
 		}
-		raw_levels[1] = finite_z[max((1, ceil(0.01 * n_finite)))]
-		raw_levels[length(raw_levels)] = finite_z[max((1, ceil(0.99 * n_finite)))]
+		else {
+			clip_lo = finite_z[max((1, ceil(0.01 * n_finite)))]
+			clip_hi = finite_z[max((1, ceil(0.99 * n_finite)))]
+		}
+		clipped_z = select(finite_z, finite_z :>= clip_lo :& finite_z :<= clip_hi)
+		n_clipped = length(clipped_z)
+
+		if (n_clipped > 0) {
+			quantile_probs = rangen(0, 1, max((2, clines_actual)))
+			raw_levels = J(length(quantile_probs), 1, .)
+			for (i = 1; i <= length(quantile_probs); i++) {
+				raw_levels[i] = clipped_z[max((1, ceil(quantile_probs[i] * n_clipped)))]
+			}
+		}
+		else {
+			raw_levels = J(1, 1, finite_z[ceil(n_finite / 2)])
+		}
 
 		raw_levels = round(raw_levels, .001)
 		raw_levels = raw_levels \ round(threshold, .001)
@@ -1328,12 +1336,51 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 	else {
 		cuts = J(1, 1, threshold)
 	}
-	st_matrix(toprange_name, cuts)
+
+	// For each contour level, find diagonal crossing point for label placement
+	// (where contour crosses the line y = x)
+	real matrix toprange  // (n_levels x 3): level, diag_position, level_value
+	real scalar k, diag_pos
+	toprange = J(length(cuts), 3, .)
+	for (k = 1; k <= length(cuts); k++) {
+		toprange[k, 1] = k
+		toprange[k, 3] = cuts[k]
+		// Search along diagonal of the grid for where z crosses this level
+		diag_pos = .
+		for (i = 2; i <= min((nx, ny)); i++) {
+			real scalar z_prev, z_curr, grid_diag_prev, grid_diag_curr
+			// Index into flat contour_grid: element (i,i) = (i-1)*ny + (ny - i + 1) + 1
+			// But grid is stored as (x_i, y_j) looping x outer, y inner (reversed)
+			// So diagonal (grid_x[i], grid_y[i]):
+			// In the flat array: position = (i-1)*ny + (ny - i + 1) + 1
+			real scalar idx_prev, idx_curr
+			idx_prev = (i - 2) * ny + (ny - (i - 1) + 1)
+			idx_curr = (i - 1) * ny + (ny - i + 1)
+			z_prev = contour_grid[idx_prev, 3]
+			z_curr = contour_grid[idx_curr, 3]
+			if (z_prev != . & z_curr != .) {
+				if ((z_prev <= cuts[k] & z_curr >= cuts[k]) | (z_prev >= cuts[k] & z_curr <= cuts[k])) {
+					// Linear interpolation on the diagonal
+					real scalar frac
+					if (abs(z_curr - z_prev) > 1e-12) {
+						frac = (cuts[k] - z_prev) / (z_curr - z_prev)
+					}
+					else {
+						frac = 0.5
+					}
+					diag_pos = grid_x[i - 1] + frac * (grid_x[i] - grid_x[i - 1])
+					break
+				}
+			}
+		}
+		toprange[k, 2] = diag_pos
+	}
+	st_matrix(toprange_name, toprange)
 
 	// Store the observed value at (0,0) for labeling
-	val = __ivsm_iv_adjusted_limit(fs_coef, fs_se, rf_coef, rf_se,
-								   rho, dof, 0, 0, alpha, ci_limit)
-	st_numscalar("__ivsm_obs_value", val)
+	st_numscalar("__ivsm_obs_value", obs_value)
+	// Flag if the grid has infinite values (upper CI blow-up)
+	st_numscalar("__ivsm_has_inf", has_inf)
 }
 
 
@@ -1401,8 +1448,10 @@ void __ivsm_contour_plot_t(real scalar fs_coef, real scalar fs_se,
 	st_store((n_existing + 1::n_existing + n_total), "sense_contour_z", contour_grid[., 3])
 
 	// Compute contour levels using quantiles (matching R)
-	real colvector finite_z, quantile_probs, raw_levels, cuts
-	real scalar n_finite, t_crit
+	// Clip z-values to sensible range before computing quantiles
+	real colvector finite_z, clipped_z, quantile_probs, raw_levels, cuts
+	real scalar n_finite, n_clipped, t_crit
+	real scalar clip_lo, clip_hi
 
 	clines_actual = min((clines, nx - 2))
 	t_crit = sign(ar_coef) * invttail(dof - 1, alpha/2)
@@ -1411,13 +1460,23 @@ void __ivsm_contour_plot_t(real scalar fs_coef, real scalar fs_se,
 	n_finite = length(finite_z)
 	if (n_finite > 0) {
 		finite_z = sort(finite_z, 1)
-		quantile_probs = rangen(0, 1, max((2, clines_actual)))
-		raw_levels = J(length(quantile_probs), 1, .)
-		for (i = 1; i <= length(quantile_probs); i++) {
-			raw_levels[i] = finite_z[max((1, ceil(quantile_probs[i] * n_finite)))]
+
+		// Clip to 1st-99th percentile range
+		clip_lo = finite_z[max((1, ceil(0.01 * n_finite)))]
+		clip_hi = finite_z[max((1, ceil(0.99 * n_finite)))]
+		clipped_z = select(finite_z, finite_z :>= clip_lo :& finite_z :<= clip_hi)
+		n_clipped = length(clipped_z)
+
+		if (n_clipped > 0) {
+			quantile_probs = rangen(0, 1, max((2, clines_actual)))
+			raw_levels = J(length(quantile_probs), 1, .)
+			for (i = 1; i <= length(quantile_probs); i++) {
+				raw_levels[i] = clipped_z[max((1, ceil(quantile_probs[i] * n_clipped)))]
+			}
 		}
-		raw_levels[1] = finite_z[max((1, ceil(0.01 * n_finite)))]
-		raw_levels[length(raw_levels)] = finite_z[max((1, ceil(0.99 * n_finite)))]
+		else {
+			raw_levels = J(1, 1, finite_z[ceil(n_finite / 2)])
+		}
 
 		raw_levels = round(raw_levels, .001)
 		raw_levels = raw_levels \ round(t_crit, .001)
@@ -1427,11 +1486,97 @@ void __ivsm_contour_plot_t(real scalar fs_coef, real scalar fs_se,
 	else {
 		cuts = J(1, 1, t_crit)
 	}
-	st_matrix("toprange_t", cuts)
+
+	// For each level, find diagonal crossing for label placement
+	real matrix toprange
+	real scalar k, diag_pos
+	toprange = J(length(cuts), 3, .)
+	for (k = 1; k <= length(cuts); k++) {
+		toprange[k, 1] = k
+		toprange[k, 3] = cuts[k]
+		diag_pos = .
+		for (i = 2; i <= min((nx, ny)); i++) {
+			real scalar z_prev, z_curr
+			real scalar idx_prev, idx_curr
+			idx_prev = (i - 2) * ny + (ny - (i - 1) + 1)
+			idx_curr = (i - 1) * ny + (ny - i + 1)
+			z_prev = contour_grid[idx_prev, 3]
+			z_curr = contour_grid[idx_curr, 3]
+			if (z_prev != . & z_curr != .) {
+				if ((z_prev <= cuts[k] & z_curr >= cuts[k]) | (z_prev >= cuts[k] & z_curr <= cuts[k])) {
+					real scalar frac
+					if (abs(z_curr - z_prev) > 1e-12) {
+						frac = (cuts[k] - z_prev) / (z_curr - z_prev)
+					}
+					else {
+						frac = 0.5
+					}
+					diag_pos = grid_x[i - 1] + frac * (grid_x[i] - grid_x[i - 1])
+					break
+				}
+			}
+		}
+		toprange[k, 2] = diag_pos
+	}
+	st_matrix("toprange_t", toprange)
 
 	// Store the observed t-value at (0,0)
 	st_numscalar("__ivsm_obs_value", ar_coef / (ar_se * sqrt(dof / (dof - 1))))
 }
 
 
+end
+
+
+// =========================================================================
+// addplot_m: add plots to existing graph (modified from Ben Jann's addplot)
+// =========================================================================
+capture program drop __ivsm_addplot
+program __ivsm_addplot
+	version 13
+	local caller : di _caller()
+	_on_colon_parse `0'
+	local plots `"`s(before)'"'
+	local cmd   `"`s(after)'"'
+	gettoken name : plots
+	capt confirm name `name'
+	if _rc==0 {
+		gettoken name plots : plots
+	}
+	else local name
+	if `"`plots'"'!="" {
+		numlist `"`plots'"', integer range(>=1)
+		local plots `r(numlist)'
+	}
+	if `"`name'"'=="" {
+		gr_current name :
+	}
+	else {
+		capt classutil d `name'
+	}
+	if `"`plots'"'=="" {
+		local grtype `"`.`name'.graphfamily'"'
+		if `"`grtype'"'=="twoway" {
+			version `caller': .`name'.parse `cmd'
+			exit
+		}
+		local nplots `"`.`name'.n'"'
+		capt confirm integer number `nplots'
+		if _rc==0 {
+			forv plot = 1/`nplots' {
+				if `"`.`name'.graphs[`plot'].graphfamily'"'=="twoway" {
+					local plots `plots' `plot'
+				}
+			}
+		}
+	}
+	else {
+		foreach plot of local plots {
+			capt classutil d `name'.graphs[`plot']
+			local grtype `"`.`name'.graphs[`plot'].graphfamily'"'
+		}
+	}
+	foreach plot of local plots {
+		version `caller': .`name'.graphs[`plot'].parse `cmd'
+	}
 end
