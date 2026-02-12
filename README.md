@@ -42,13 +42,13 @@ Output:
 Sensitivity Analysis for Instrumental Variables
 (Anderson-Rubin Approach)
 -----------------------------------------------------------------
-IV Estimates (lwage ~ educ | nearc4, ...):
-  Coef. Estimate:   0.1315
-  Conf. Interval:  [ 0.0248,  0.2848]
+IV Estimates:
+  Coef. Estimate:  0.1315
+  Conf. Interval:  [0.0248, 0.2848]
 
   Sensitivity Statistics:
-    Extreme Robustness Value:   0.0005
-    Robustness Value:           0.0067
+    Extreme Robustness Value:  0.0005
+    Robustness Value:          0.0067
 
   Bounds on Omitted Variable Bias:
     Bound Label          R2zw.x    R2y0w.zx    Lower CI    Upper CI
@@ -58,16 +58,16 @@ IV Estimates (lwage ~ educ | nearc4, ...):
 
   Note: H0 = 0, q >= 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
-First-Stage Estimates (educ ~ nearc4 | ...):
-  Coef. Estimate:   0.3199
-  Standard Error:   0.0879
-  t-value:          3.6408
-  p-value:          0.0003
-  Conf. Interval:  [ 0.1476,  0.4922]
+First-Stage Estimates:
+  Coef. Estimate:  0.3199
+  Standard Error:  0.0879
+  t-value:         3.6408
+  p-value:         0.0003
+  Conf. Interval:  [0.1476, 0.4922]
 
   Sensitivity Statistics:
-    Extreme Robustness Value:   0.0031
-    Robustness Value:           0.0302
+    Extreme Robustness Value:  0.0031
+    Robustness Value:          0.0302
 
   Bounds on Omitted Variable Bias:
     Bound Label          R2zw.x     R2dw.zx    Lower CI    Upper CI
@@ -77,16 +77,16 @@ First-Stage Estimates (educ ~ nearc4 | ...):
 
   Note: H0 = 0, q = 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
-Reduced-Form Estimates (lwage ~ nearc4 | ...):
-  Coef. Estimate:   0.0421
-  Standard Error:   0.0181
-  t-value:          2.3271
-  p-value:          0.0200
-  Conf. Interval:  [ 0.0066,  0.0775]
+Reduced-Form Estimates:
+  Coef. Estimate:  0.0421
+  Standard Error:  0.0181
+  t-value:         2.3271
+  p-value:         0.0200
+  Conf. Interval:  [0.0066, 0.0775]
 
   Sensitivity Statistics:
-    Extreme Robustness Value:   0.0005
-    Robustness Value:           0.0067
+    Extreme Robustness Value:  0.0005
+    Robustness Value:          0.0067
 
   Bounds on Omitted Variable Bias:
     Bound Label          R2zw.x     R2yw.zx    Lower CI    Upper CI

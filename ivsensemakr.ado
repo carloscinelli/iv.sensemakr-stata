@@ -405,15 +405,15 @@ mata: printf("{txt}(Anderson-Rubin Approach)\n")
 mata: printf("{txt}{hline 65}\n")
 
 // --- IV Section ---
-mata: printf("{txt}IV Estimates ({res}`depvar'{txt} ~ {res}`treatvar'{txt} | {res}`instrvar'{txt}, {res}`covars'{txt}):\n")
-mata: printf("{txt}  Coef. Estimate:  {res}%7.4f\n", `iv_estimate')
+mata: printf("{txt}IV Estimates:\n")
+mata: printf("{txt}  Coef. Estimate:  {res}%6.4f\n", `iv_estimate')
 
 // IV CI (handle different types)
 if ("`ar_ci_type'" == "bounded") {
-	mata: printf("{txt}  Conf. Interval:  {res}[%7.4f, %7.4f]\n", `ar_ci_lwr', `ar_ci_upr')
+	mata: printf("{txt}  Conf. Interval:  {res}[%6.4f, %6.4f]\n", `ar_ci_lwr', `ar_ci_upr')
 }
 else if ("`ar_ci_type'" == "disjoint") {
-	mata: printf("{txt}  Conf. Interval:  {res}(-Inf, %7.4f] U [%7.4f, +Inf)\n", `ar_ci_lwr', `ar_ci_upr')
+	mata: printf("{txt}  Conf. Interval:  {res}(-Inf, %6.4f] U [%6.4f, +Inf)\n", `ar_ci_lwr', `ar_ci_upr')
 }
 else if ("`ar_ci_type'" == "all_reals") {
 	mata: printf("{txt}  Conf. Interval:  {res}(-Inf, +Inf)\n")
@@ -424,8 +424,8 @@ else if ("`ar_ci_type'" == "empty") {
 
 mata: printf("\n")
 mata: printf("{txt}  Sensitivity Statistics:\n")
-mata: printf("{txt}    Extreme Robustness Value:  {res}%7.4f\n", `xrv_iv')
-mata: printf("{txt}    Robustness Value:          {res}%7.4f\n", `rv_iv')
+mata: printf("{txt}    Extreme Robustness Value:  {res}%6.4f\n", `xrv_iv')
+mata: printf("{txt}    Robustness Value:          {res}%6.4f\n", `rv_iv')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
@@ -454,17 +454,17 @@ else {
 
 // --- FS Section ---
 mata: printf("{txt}{hline 65}\n")
-mata: printf("{txt}First-Stage Estimates ({res}`treatvar'{txt} ~ {res}`instrvar'{txt} | {res}`covars'{txt}):\n")
-mata: printf("{txt}  Coef. Estimate:  {res}%7.4f\n", `fs_coef')
-mata: printf("{txt}  Standard Error:  {res}%7.4f\n", `fs_se')
-mata: printf("{txt}  t-value:         {res}%7.4f\n", `fs_t')
-mata: printf("{txt}  p-value:         {res}%7.4f\n", `fs_p')
-mata: printf("{txt}  Conf. Interval:  {res}[%7.4f, %7.4f]\n", `fs_lwr', `fs_upr')
+mata: printf("{txt}First-Stage Estimates:\n")
+mata: printf("{txt}  Coef. Estimate:  {res}%6.4f\n", `fs_coef')
+mata: printf("{txt}  Standard Error:  {res}%6.4f\n", `fs_se')
+mata: printf("{txt}  t-value:         {res}%6.4f\n", `fs_t')
+mata: printf("{txt}  p-value:         {res}%6.4f\n", `fs_p')
+mata: printf("{txt}  Conf. Interval:  {res}[%6.4f, %6.4f]\n", `fs_lwr', `fs_upr')
 
 mata: printf("\n")
 mata: printf("{txt}  Sensitivity Statistics:\n")
-mata: printf("{txt}    Extreme Robustness Value:  {res}%7.4f\n", `xrv_fs')
-mata: printf("{txt}    Robustness Value:          {res}%7.4f\n", `rv_fs')
+mata: printf("{txt}    Extreme Robustness Value:  {res}%6.4f\n", `xrv_fs')
+mata: printf("{txt}    Robustness Value:          {res}%6.4f\n", `rv_fs')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
@@ -488,17 +488,17 @@ mata: printf("{txt}  Note: H0 = 0, q = 1, alpha = %g, df = %g.\n", `alpha', `fs_
 
 // --- RF Section ---
 mata: printf("{txt}{hline 65}\n")
-mata: printf("{txt}Reduced-Form Estimates ({res}`depvar'{txt} ~ {res}`instrvar'{txt} | {res}`covars'{txt}):\n")
-mata: printf("{txt}  Coef. Estimate:  {res}%7.4f\n", `rf_coef')
-mata: printf("{txt}  Standard Error:  {res}%7.4f\n", `rf_se')
-mata: printf("{txt}  t-value:         {res}%7.4f\n", `rf_t')
-mata: printf("{txt}  p-value:         {res}%7.4f\n", `rf_p')
-mata: printf("{txt}  Conf. Interval:  {res}[%7.4f, %7.4f]\n", `rf_lwr', `rf_upr')
+mata: printf("{txt}Reduced-Form Estimates:\n")
+mata: printf("{txt}  Coef. Estimate:  {res}%6.4f\n", `rf_coef')
+mata: printf("{txt}  Standard Error:  {res}%6.4f\n", `rf_se')
+mata: printf("{txt}  t-value:         {res}%6.4f\n", `rf_t')
+mata: printf("{txt}  p-value:         {res}%6.4f\n", `rf_p')
+mata: printf("{txt}  Conf. Interval:  {res}[%6.4f, %6.4f]\n", `rf_lwr', `rf_upr')
 
 mata: printf("\n")
 mata: printf("{txt}  Sensitivity Statistics:\n")
-mata: printf("{txt}    Extreme Robustness Value:  {res}%7.4f\n", `xrv_rf')
-mata: printf("{txt}    Robustness Value:          {res}%7.4f\n", `rv_rf')
+mata: printf("{txt}    Extreme Robustness Value:  {res}%6.4f\n", `xrv_rf')
+mata: printf("{txt}    Robustness Value:          {res}%6.4f\n", `rv_rf')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
