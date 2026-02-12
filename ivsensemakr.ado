@@ -695,7 +695,7 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 		capture: mat drop __ivsm_labels
 
 		// Combine side by side
-		graph combine __ivsm_lwr_plot __ivsm_upr_plot, name(__ivsm_contour, replace) nodraw
+		graph combine __ivsm_lwr_plot __ivsm_upr_plot, name(__ivsm_contour, replace) xsize(10) ysize(5) nodraw
 		graph display __ivsm_contour
 
 		capture: graph drop __ivsm_lwr_plot
