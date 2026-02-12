@@ -288,6 +288,7 @@ if ("`benchmark'" != "") {
 	mata: printf("{txt}  {hline 15}{c +}{hline 48}\n")
 
 	local bench_idx = 0
+	local bench_row_idx = 0
 	foreach bench of local benchmark {
 		local bench_idx = `bench_idx' + 1
 
@@ -328,11 +329,13 @@ if ("`benchmark'" != "") {
 
 			// Label
 			if (`kz_val' == `ky_val') {
-				local blabel = "`kz_val'x `bench'"
+				local blabel "`kz_val'x `bench'"
 			}
 			else {
-				local blabel = "`kz_val'/`ky_val'x `bench'"
+				local blabel "`kz_val'/`ky_val'x `bench'"
 			}
+			local bench_row_idx = `bench_row_idx' + 1
+			local __ivsm_blbl_`bench_row_idx' "`blabel'"
 
 			// Print
 			mata: printf("{txt}  %-15s {c |} {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
@@ -486,48 +489,59 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 		mata: __ivsm_contour_plot_iv(`fs_coef', `fs_se', `rf_coef', `rf_se', `rho', `ar_dof', `lim_lb', `lim_ub', `alpha', "lwr", `clines', `h0_q')
 		matrix colnames __ivsm_contourgrid_lwr = "r2zw_x" "r2y0w_zx" "lwr_ci"
 
-		// Contour plot - lower limit
 		capture: graph drop __ivsm_lwr_plot
-		local round_est : di %6.3f `iv_estimate'
 		local round_h0 : di %6.3f `h0_q'
+		local obs_val = scalar(__ivsm_obs_value)
+		local round_obs : di %5.3f `obs_val'
 
-		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-			name(__ivsm_lwr_plot, replace) ccuts(`h0_q') ccolor(red) nodraw ///
-			xlab(, labsize(small)) ylab(, labsize(small)) ///
-			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
-			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
-			title("Lower CI Limit", size(medium)) ///
-			text(0.001 0.001 "Unadjusted (`round_est')", size(vsmall) place(ne)) ///
-			legend(off) ///
-			|| scatteri 0 0, mcolor(black) msize(small) msymbol(T)
-
-		// Add extra contour lines
-		forvalues i = 1(1)`clines' {
-			local cutvalue = toprange_lwr[`i', 3]
-			local cutvalue_round : di %6.3f toprange_lwr[`i', 3]
-			local cut_x = toprange_lwr[`i', 2] + .001
-			capture: __ivsm_addplot __ivsm_lwr_plot: contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-				ccuts(`cutvalue') ccolor(gray) clwidths(vthin) ///
-				text(`cut_x' `cut_x' "`cutvalue_round'", size(vsmall) bcolor(white) box place(ne))
+		// Build single contourline with all levels + threshold
+		local all_cuts ""
+		local all_colors ""
+		local all_patterns ""
+		local all_widths ""
+		local ncuts = rowsof(toprange_lwr)
+		forvalues i = 1(1)`ncuts' {
+			local cutvalue = toprange_lwr[`i', 1]
+			local skip = 0
+			if (abs(`cutvalue' - `h0_q') < 0.005) local skip = 1
+			if (`skip' == 0) {
+				local all_cuts "`all_cuts' `cutvalue'"
+				local all_colors "`all_colors' black"
+				local all_patterns "`all_patterns' solid"
+				local all_widths "`all_widths' thin"
+			}
 		}
+		// Add threshold as last level
+		local all_cuts "`all_cuts' `h0_q'"
+		local all_colors "`all_colors' red"
+		local all_patterns "`all_patterns' dash"
+		local all_widths "`all_widths' medthick"
 
-		// Add benchmark points if available
+		// Build scatter overlay for benchmarks
+		local bench_scatter ""
 		if ("`benchmark'" != "") {
 			local dim = rowsof(__ivsm_bounds_iv)
-			local rownms : rown __ivsm_bounds_iv
 			forvalues idx = 1(1)`dim' {
 				local r2yz_val = __ivsm_bounds_iv[`idx', 4]
 				local r2dz_val = __ivsm_bounds_iv[`idx', 3]
 				local coef_val = __ivsm_bounds_iv[`idx', 5]
 				local coef_val : di %5.3f `coef_val'
-				local kz_v = __ivsm_bounds_iv[`idx', 1]
-				local ky_v = __ivsm_bounds_iv[`idx', 2]
+				local blbl "`__ivsm_blbl_`idx''"
 				if (`r2yz_val' < `lim_ub' & `r2dz_val' < `lim_ub') {
-					capture: __ivsm_addplot __ivsm_lwr_plot: scatteri `r2yz_val' `r2dz_val' "`kz_v'x (`coef_val')", ///
-						mcolor(black) msize(vsmall) mlabcolor(black) mlabsize(vsmall)
+					local bench_scatter "`bench_scatter' || scatteri `r2yz_val' `r2dz_val' `"`blbl' (`coef_val')"', mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)"
 				}
 			}
 		}
+
+		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+			name(__ivsm_lwr_plot, replace) ccuts(`all_cuts') ccolor(`all_colors') clpattern(`all_patterns') clwidths(`all_widths') nodraw ///
+			xlab(, labsize(small)) ylab(, labsize(small)) ///
+			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
+			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
+			title("Lower CI Limit", size(medium)) ///
+			legend(off) ///
+			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3) ///
+			`bench_scatter'
 
 		capture: drop sense_contour_*
 		capture: mat drop toprange_lwr
@@ -537,26 +551,31 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 		matrix colnames __ivsm_contourgrid_upr = "r2zw_x" "r2y0w_zx" "upr_ci"
 
 		capture: graph drop __ivsm_upr_plot
+		local obs_val = scalar(__ivsm_obs_value)
+		local round_obs : di %5.3f `obs_val'
 
-		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-			name(__ivsm_upr_plot, replace) ccuts(`h0_q') ccolor(red) nodraw ///
-			xlab(, labsize(small)) ylab(, labsize(small)) ///
-			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
-			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
-			title("Upper CI Limit", size(medium)) ///
-			text(0.001 0.001 "Unadjusted (`round_est')", size(vsmall) place(ne)) ///
-			legend(off) ///
-			|| scatteri 0 0, mcolor(black) msize(small) msymbol(T)
-
-		forvalues i = 1(1)`clines' {
-			local cutvalue = toprange_upr[`i', 3]
-			local cutvalue_round : di %6.3f toprange_upr[`i', 3]
-			local cut_x = toprange_upr[`i', 2] + .001
-			capture: __ivsm_addplot __ivsm_upr_plot: contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-				ccuts(`cutvalue') ccolor(gray) clwidths(vthin) ///
-				text(`cut_x' `cut_x' "`cutvalue_round'", size(vsmall) bcolor(white) box place(ne))
+		local all_cuts ""
+		local all_colors ""
+		local all_patterns ""
+		local all_widths ""
+		local ncuts = rowsof(toprange_upr)
+		forvalues i = 1(1)`ncuts' {
+			local cutvalue = toprange_upr[`i', 1]
+			local skip = 0
+			if (abs(`cutvalue' - `h0_q') < 0.005) local skip = 1
+			if (`skip' == 0) {
+				local all_cuts "`all_cuts' `cutvalue'"
+				local all_colors "`all_colors' black"
+				local all_patterns "`all_patterns' solid"
+				local all_widths "`all_widths' thin"
+			}
 		}
+		local all_cuts "`all_cuts' `h0_q'"
+		local all_colors "`all_colors' red"
+		local all_patterns "`all_patterns' dash"
+		local all_widths "`all_widths' medthick"
 
+		local bench_scatter ""
 		if ("`benchmark'" != "") {
 			local dim = rowsof(__ivsm_bounds_iv)
 			forvalues idx = 1(1)`dim' {
@@ -564,13 +583,22 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 				local r2dz_val = __ivsm_bounds_iv[`idx', 3]
 				local coef_val = __ivsm_bounds_iv[`idx', 6]
 				local coef_val : di %5.3f `coef_val'
-				local kz_v = __ivsm_bounds_iv[`idx', 1]
+				local blbl "`__ivsm_blbl_`idx''"
 				if (`r2yz_val' < `lim_ub' & `r2dz_val' < `lim_ub') {
-					capture: __ivsm_addplot __ivsm_upr_plot: scatteri `r2yz_val' `r2dz_val' "`kz_v'x (`coef_val')", ///
-						mcolor(black) msize(vsmall) mlabcolor(black) mlabsize(vsmall)
+					local bench_scatter "`bench_scatter' || scatteri `r2yz_val' `r2dz_val' `"`blbl' (`coef_val')"', mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)"
 				}
 			}
 		}
+
+		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
+			name(__ivsm_upr_plot, replace) ccuts(`all_cuts') ccolor(`all_colors') clpattern(`all_patterns') clwidths(`all_widths') nodraw ///
+			xlab(, labsize(small)) ylab(, labsize(small)) ///
+			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
+			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
+			title("Upper CI Limit", size(medium)) ///
+			legend(off) ///
+			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3) ///
+			`bench_scatter'
 
 		capture: drop sense_contour_*
 		capture: mat drop toprange_upr
@@ -588,34 +616,63 @@ if ("`contourplot'" != "" | "`tcontourplot'" != "") {
 	if ("`tcontourplot'" != "") {
 		preserve
 
-		// t-value contour uses the AR model (OLS-style adjusted t)
 		mata: __ivsm_contour_plot_t(`fs_coef', `fs_se', `rf_coef', `rf_se', `rho', `ar_dof', ///
 			`lim_lb', `lim_ub', `alpha', `clines', `h0_q')
 
 		capture: graph drop __ivsm_t_plot
 
-		// Critical t-value threshold
 		local t_crit = sign(`iv_estimate') * invttail(`ar_dof' - 1, `alpha'/2)
-		local round_t : di %6.3f `ar_t_q'
+		local round_h0 : di %6.3f `h0_q'
+		local obs_val = scalar(__ivsm_obs_value)
+		local round_obs : di %5.3f `obs_val'
+
+		local all_cuts ""
+		local all_colors ""
+		local all_patterns ""
+		local all_widths ""
+		local ncuts = rowsof(toprange_t)
+		forvalues i = 1(1)`ncuts' {
+			local cutvalue = toprange_t[`i', 1]
+			local skip = 0
+			if (abs(`cutvalue' - `t_crit') < 0.05) local skip = 1
+			if (`skip' == 0) {
+				local all_cuts "`all_cuts' `cutvalue'"
+				local all_colors "`all_colors' black"
+				local all_patterns "`all_patterns' solid"
+				local all_widths "`all_widths' thin"
+			}
+		}
+		local all_cuts "`all_cuts' `t_crit'"
+		local all_colors "`all_colors' red"
+		local all_patterns "`all_patterns' dash"
+		local all_widths "`all_widths' medthick"
+
+		// Build scatter overlay for benchmarks
+		local bench_scatter ""
+		if ("`benchmark'" != "") {
+			local dim = rowsof(__ivsm_bounds_iv)
+			forvalues idx = 1(1)`dim' {
+				local r2yz_val = __ivsm_bounds_iv[`idx', 4]
+				local r2dz_val = __ivsm_bounds_iv[`idx', 3]
+				local blbl "`__ivsm_blbl_`idx''"
+				local bench_lwr = __ivsm_bounds_iv[`idx', 5]
+				local bench_upr = __ivsm_bounds_iv[`idx', 6]
+				local bench_t : di %5.3f (`bench_lwr' + `bench_upr') / 2
+				if (`r2yz_val' < `lim_ub' & `r2dz_val' < `lim_ub') {
+					local bench_scatter "`bench_scatter' || scatteri `r2yz_val' `r2dz_val' `"`blbl' (`bench_t')"', mcolor(red) mfcolor(red) msize(small) msymbol(D) mlabcolor(black) mlabsize(vsmall) mlabposition(3)"
+				}
+			}
+		}
 
 		twoway contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-			name(__ivsm_t_plot, replace) ccuts(`t_crit') ccolor(red) nodraw ///
+			name(__ivsm_t_plot, replace) ccuts(`all_cuts') ccolor(`all_colors') clpattern(`all_patterns') clwidths(`all_widths') nodraw ///
 			xlab(, labsize(small)) ylab(, labsize(small)) ///
 			ytitle("Partial R{superscript:2} of confounder(s) with pot. outcome", size(small)) ///
 			xtitle("Partial R{superscript:2} of confounder(s) with instrument", size(small)) ///
 			title("t-value for H0 = `round_h0'", size(medium)) ///
-			text(0.001 0.001 "Unadjusted (`round_t')", size(vsmall) place(ne)) ///
 			legend(off) ///
-			|| scatteri 0 0, mcolor(black) msize(small) msymbol(T)
-
-		forvalues i = 1(1)`clines' {
-			local cutvalue = toprange_t[`i', 3]
-			local cutvalue_round : di %6.3f toprange_t[`i', 3]
-			local cut_x = toprange_t[`i', 2] + .001
-			capture: __ivsm_addplot __ivsm_t_plot: contourline sense_contour_z sense_contour_y sense_contour_x if sense_contour_z != ., ///
-				ccuts(`cutvalue') ccolor(gray) clwidths(vthin) ///
-				text(`cut_x' `cut_x' "`cutvalue_round'", size(vsmall) bcolor(white) box place(ne))
-		}
+			|| scatteri 0 0 "Observed (`round_obs')", mcolor(black) msize(small) msymbol(T) mlabcolor(black) mlabsize(vsmall) mlabposition(3) ///
+			`bench_scatter'
 
 		graph display __ivsm_t_plot
 
@@ -1141,7 +1198,7 @@ void __ivsm_compute_ols_bounds(real scalar r2dxj_x, real scalar r2yxj_x,
 
 
 // -----------------------------------------------------------------
-// contour_plot_iv: generate contour grid for CI limits
+// contour_plot_iv: generate contour grid for CI limits (vectorized)
 // Maps from: plots.R ovb4iv_contour_plot.numeric
 // -----------------------------------------------------------------
 void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
@@ -1152,28 +1209,76 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 							string scalar ci_limit,
 							real scalar clines,
 							real scalar threshold) {
-	real colvector grid_x, grid_y
-	real matrix contour_grid, cuts
-	real scalar i, j, z, nx, ny, val, n_existing
+	real colvector grid_x, grid_y, r2x_vec, r2y_vec
+	real matrix contour_grid
+	real scalar i, j, z, nx, ny, n_existing, n_total, val, tc, fc
 	string scalar mat_name, toprange_name
+	real colvector sef_vec, bf_vec, t_dagger
+	real colvector a_vec, b_vec, c_vec, delta_vec, result
+	real colvector r2y_adj, cap_mask
 
-	grid_x = rangen(lim_lb, lim_ub, 51)
-	grid_y = rangen(lim_lb, lim_ub, 51)
-	nx = length(grid_x)
-	ny = length(grid_y)
+	nx = 50
+	ny = 50
+	n_total = nx * ny
 
-	contour_grid = J(nx * ny, 3, .)
+	grid_x = rangen(lim_lb, lim_ub, nx)
+	grid_y = rangen(lim_lb, lim_ub, ny)
+
+	// Build flat grid vectors using Kronecker-style expansion (no loop)
+	r2x_vec = J(ny, 1, 1) # grid_x  // each x repeated ny times
+	r2y_vec = J(1, 1, 1) # J(nx, 1, 1) # grid_y[ny::1]
+	// Actually use simple loop — Mata Kronecker may not work this way
+	r2x_vec = J(n_total, 1, .)
+	r2y_vec = J(n_total, 1, .)
 	z = 1
 	for (i = 1; i <= nx; i++) {
 		for (j = ny; j >= 1; j--) {
-			contour_grid[z, 1] = grid_x[i]
-			contour_grid[z, 2] = grid_y[j]
-			contour_grid[z, 3] = __ivsm_iv_adjusted_limit(fs_coef, fs_se, rf_coef, rf_se,
-														   rho, dof, grid_x[i], grid_y[j],
-														   alpha, ci_limit)
+			r2x_vec[z] = grid_x[i]
+			r2y_vec[z] = grid_y[j]
 			z++
 		}
 	}
+
+	// Vectorized adjusted_critical_value (no loops)
+	tc = sqrt(invFtail(1, dof - 1, alpha))
+	fc = tc / sqrt(dof)
+
+	// Cap r2y where r2x < fc^2 * (r2y/(1-r2y))
+	cap_mask = r2x_vec :< (fc^2 :* (r2y_vec :/ (1 :- r2y_vec)))
+	r2y_adj = r2y_vec
+	r2y_adj = cap_mask :* (r2x_vec :/ (fc^2 :+ r2x_vec)) + (1 :- cap_mask) :* r2y_vec
+
+	sef_vec = sqrt(1 :- r2y_adj) :/ sqrt(1 :- r2x_vec)
+	bf_vec  = sqrt(r2y_adj :* r2x_vec :/ (1 :- r2x_vec))
+	t_dagger = tc :* sef_vec :* sqrt(dof / (dof - 1)) :+ bf_vec :* sqrt(dof)
+
+	// Vectorized abc_builder
+	a_vec = fs_coef^2 :- fs_se^2 :* t_dagger:^2
+	b_vec = 2 * rho * rf_se * fs_se :* t_dagger:^2 :- 2 * rf_coef * fs_coef
+	c_vec = rf_coef^2 :- rf_se^2 :* t_dagger:^2
+
+	// Vectorized quadratic solver (no loops)
+	delta_vec = b_vec:^2 :- 4 :* a_vec :* c_vec
+	result = J(n_total, 1, .)
+
+	if (ci_limit == "lwr") {
+		// lwr: a > 0 & delta >= 0
+		for (i = 1; i <= n_total; i++) {
+			if (a_vec[i] > 0 & delta_vec[i] >= 0) {
+				result[i] = (-b_vec[i] - sqrt(delta_vec[i])) / (2 * a_vec[i])
+			}
+		}
+	}
+	else {
+		// upr: a > 0 & delta > 0
+		for (i = 1; i <= n_total; i++) {
+			if (a_vec[i] > 0 & delta_vec[i] > 0) {
+				result[i] = (-b_vec[i] + sqrt(delta_vec[i])) / (2 * a_vec[i])
+			}
+		}
+	}
+
+	contour_grid = (r2x_vec, r2y_vec, result)
 
 	// Store matrix
 	if (ci_limit == "lwr") {
@@ -1188,31 +1293,47 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 
 	// Create Stata variables for plotting
 	n_existing = st_nobs()
-	(void) st_addobs(nx * ny)
+	(void) st_addobs(n_total)
 	(void) st_addvar("double", "sense_contour_x")
 	(void) st_addvar("double", "sense_contour_y")
 	(void) st_addvar("double", "sense_contour_z")
 
-	for (i = 1; i <= (nx * ny); i++) {
-		st_store(n_existing + i, "sense_contour_x", contour_grid[i, 1])
-		st_store(n_existing + i, "sense_contour_y", contour_grid[i, 2])
-		st_store(n_existing + i, "sense_contour_z", contour_grid[i, 3])
-	}
+	st_store((n_existing + 1::n_existing + n_total), "sense_contour_x", contour_grid[., 1])
+	st_store((n_existing + 1::n_existing + n_total), "sense_contour_y", contour_grid[., 2])
+	st_store((n_existing + 1::n_existing + n_total), "sense_contour_z", contour_grid[., 3])
 
-	// Compute contour line cut values and label positions
-	real colvector diag_vals
-	real scalar clines_actual
+	// Compute contour levels using quantiles (matching R)
+	real colvector finite_z, quantile_probs, raw_levels, cuts
+	real scalar clines_actual, n_finite
+
 	clines_actual = min((clines, nx - 2))
-	diag_vals = rangen(lim_lb + (lim_ub - lim_lb) * 0.05, lim_ub * 0.95, clines_actual)
-	cuts = J(clines_actual, 3, .)
-	for (i = 1; i <= clines_actual; i++) {
-		cuts[i, 1] = diag_vals[i]
-		cuts[i, 2] = diag_vals[i]
-		cuts[i, 3] = __ivsm_iv_adjusted_limit(fs_coef, fs_se, rf_coef, rf_se,
-											   rho, dof, diag_vals[i], diag_vals[i],
-											   alpha, ci_limit)
+
+	finite_z = select(contour_grid[., 3], contour_grid[., 3] :< .)
+	n_finite = length(finite_z)
+	if (n_finite > 0) {
+		finite_z = sort(finite_z, 1)
+		quantile_probs = rangen(0, 1, max((2, clines_actual)))
+		raw_levels = J(length(quantile_probs), 1, .)
+		for (i = 1; i <= length(quantile_probs); i++) {
+			raw_levels[i] = finite_z[max((1, ceil(quantile_probs[i] * n_finite)))]
+		}
+		raw_levels[1] = finite_z[max((1, ceil(0.01 * n_finite)))]
+		raw_levels[length(raw_levels)] = finite_z[max((1, ceil(0.99 * n_finite)))]
+
+		raw_levels = round(raw_levels, .001)
+		raw_levels = raw_levels \ round(threshold, .001)
+		raw_levels = sort(uniqrows(raw_levels), 1)
+		cuts = raw_levels
+	}
+	else {
+		cuts = J(1, 1, threshold)
 	}
 	st_matrix(toprange_name, cuts)
+
+	// Store the observed value at (0,0) for labeling
+	val = __ivsm_iv_adjusted_limit(fs_coef, fs_se, rf_coef, rf_se,
+								   rho, dof, 0, 0, alpha, ci_limit)
+	st_numscalar("__ivsm_obs_value", val)
 }
 
 
@@ -1227,80 +1348,89 @@ void __ivsm_contour_plot_t(real scalar fs_coef, real scalar fs_se,
 						   real scalar alpha,
 						   real scalar clines,
 						   real scalar h0) {
-	real colvector grid_x, grid_y
-	real matrix contour_grid, cuts
-	real scalar i, j, z, nx, ny, n_existing
-	real scalar ar_coef, ar_se, bias, adj_e, adj_se, adj_t
-	real colvector diag_vals
-	real scalar clines_actual
+	real colvector grid_x, grid_y, r2x_vec, r2y_vec
+	real matrix contour_grid
+	real scalar i, j, z, nx, ny, n_existing, n_total
+	real scalar ar_coef, ar_se, clines_actual
+	real colvector bias_vec, adj_e_vec, adj_se_vec, result
 
-	// The AR regression tests H0: tau = h0
-	// The coefficient is rf_coef - h0*fs_coef (approximately), se is composite
-	// For t-value contour, we use the OLS adjusted_t approach on the AR model
-	// The AR model: y - h0*d = z*phi + x*gamma + e
-	// phi = rf_coef - h0*fs_coef
-	// We compute the adjusted t-value treating the AR model as a standard OLS model
 	ar_coef = rf_coef - h0 * fs_coef
 	ar_se = sqrt(rf_se^2 + h0^2 * fs_se^2 - 2 * h0 * rho * fs_se * rf_se)
 
-	grid_x = rangen(lim_lb, lim_ub, 51)
-	grid_y = rangen(lim_lb, lim_ub, 51)
+	grid_x = rangen(lim_lb, lim_ub, 100)
+	grid_y = rangen(lim_lb, lim_ub, 100)
 	nx = length(grid_x)
 	ny = length(grid_y)
+	n_total = nx * ny
 
-	contour_grid = J(nx * ny, 3, .)
+	// Build flat grid vectors
+	r2x_vec = J(n_total, 1, .)
+	r2y_vec = J(n_total, 1, .)
 	z = 1
 	for (i = 1; i <= nx; i++) {
 		for (j = ny; j >= 1; j--) {
-			contour_grid[z, 1] = grid_x[i]
-			contour_grid[z, 2] = grid_y[j]
-
-			// OLS-style adjusted t-value
-			bias = sqrt(grid_y[j] * grid_x[i] / (1 - grid_x[i])) * ar_se * sqrt(dof)
-			adj_e = sign(ar_coef) * (abs(ar_coef) - bias)
-			adj_se = sqrt((1 - grid_y[j]) / (1 - grid_x[i])) * ar_se * sqrt(dof / (dof - 1))
-			if (adj_se > 0) {
-				adj_t = adj_e / adj_se
-			}
-			else {
-				adj_t = .
-			}
-			contour_grid[z, 3] = adj_t
+			r2x_vec[z] = grid_x[i]
+			r2y_vec[z] = grid_y[j]
 			z++
 		}
 	}
 
+	// Vectorized OLS-style adjusted t-value
+	bias_vec = sqrt(r2y_vec :* r2x_vec :/ (1 :- r2x_vec)) :* (ar_se * sqrt(dof))
+	adj_e_vec = sign(ar_coef) :* (abs(ar_coef) :- bias_vec)
+	adj_se_vec = sqrt((1 :- r2y_vec) :/ (1 :- r2x_vec)) :* (ar_se * sqrt(dof / (dof - 1)))
+
+	result = J(n_total, 1, .)
+	for (i = 1; i <= n_total; i++) {
+		if (adj_se_vec[i] > 0) {
+			result[i] = adj_e_vec[i] / adj_se_vec[i]
+		}
+	}
+
+	contour_grid = (r2x_vec, r2y_vec, result)
 	st_matrix("__ivsm_contourgrid_t", contour_grid)
 
 	n_existing = st_nobs()
-	(void) st_addobs(nx * ny)
+	(void) st_addobs(n_total)
 	(void) st_addvar("double", "sense_contour_x")
 	(void) st_addvar("double", "sense_contour_y")
 	(void) st_addvar("double", "sense_contour_z")
 
-	for (i = 1; i <= (nx * ny); i++) {
-		st_store(n_existing + i, "sense_contour_x", contour_grid[i, 1])
-		st_store(n_existing + i, "sense_contour_y", contour_grid[i, 2])
-		st_store(n_existing + i, "sense_contour_z", contour_grid[i, 3])
-	}
+	st_store((n_existing + 1::n_existing + n_total), "sense_contour_x", contour_grid[., 1])
+	st_store((n_existing + 1::n_existing + n_total), "sense_contour_y", contour_grid[., 2])
+	st_store((n_existing + 1::n_existing + n_total), "sense_contour_z", contour_grid[., 3])
+
+	// Compute contour levels using quantiles (matching R)
+	real colvector finite_z, quantile_probs, raw_levels, cuts
+	real scalar n_finite, t_crit
 
 	clines_actual = min((clines, nx - 2))
-	diag_vals = rangen(lim_lb + (lim_ub - lim_lb) * 0.05, lim_ub * 0.95, clines_actual)
-	cuts = J(clines_actual, 3, .)
-	for (i = 1; i <= clines_actual; i++) {
-		cuts[i, 1] = diag_vals[i]
-		cuts[i, 2] = diag_vals[i]
-		bias = sqrt(diag_vals[i] * diag_vals[i] / (1 - diag_vals[i])) * ar_se * sqrt(dof)
-		adj_e = sign(ar_coef) * (abs(ar_coef) - bias)
-		adj_se = sqrt((1 - diag_vals[i]) / (1 - diag_vals[i])) * ar_se * sqrt(dof / (dof - 1))
-		if (adj_se > 0) {
-			cuts[i, 3] = adj_e / adj_se
+	t_crit = sign(ar_coef) * invttail(dof - 1, alpha/2)
+
+	finite_z = select(contour_grid[., 3], contour_grid[., 3] :< .)
+	n_finite = length(finite_z)
+	if (n_finite > 0) {
+		finite_z = sort(finite_z, 1)
+		quantile_probs = rangen(0, 1, max((2, clines_actual)))
+		raw_levels = J(length(quantile_probs), 1, .)
+		for (i = 1; i <= length(quantile_probs); i++) {
+			raw_levels[i] = finite_z[max((1, ceil(quantile_probs[i] * n_finite)))]
 		}
-		else {
-			cuts[i, 3] = .
-		}
+		raw_levels[1] = finite_z[max((1, ceil(0.01 * n_finite)))]
+		raw_levels[length(raw_levels)] = finite_z[max((1, ceil(0.99 * n_finite)))]
+
+		raw_levels = round(raw_levels, .001)
+		raw_levels = raw_levels \ round(t_crit, .001)
+		raw_levels = sort(uniqrows(raw_levels), 1)
+		cuts = raw_levels
+	}
+	else {
+		cuts = J(1, 1, t_crit)
 	}
 	st_matrix("toprange_t", cuts)
+
+	// Store the observed t-value at (0,0)
+	st_numscalar("__ivsm_obs_value", ar_coef / (ar_se * sqrt(dof / (dof - 1))))
 }
 
 
