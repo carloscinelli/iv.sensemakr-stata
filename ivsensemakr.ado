@@ -423,13 +423,13 @@ else if ("`ar_ci_type'" == "empty") {
 }
 
 mata: printf("\n")
-mata: printf("{txt}  Sensitivity Statistics:\n")
+mata: printf("{txt}Sensitivity Statistics:\n")
 mata: printf("{txt}  Extreme Robustness Value:  {res}%6.4f\n", `xrv_iv')
 mata: printf("{txt}  Robustness Value:          {res}%6.4f\n", `rv_iv')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
-	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
+	mata: printf("{txt}Bounds on Omitted Variable Bias:\n")
 	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2y0w.zx", "Lower CI", "Upper CI")
 	mata: printf("{txt}  {hline 63}\n")
 	local iv_nrows = rowsof(__ivsm_bounds_iv)
@@ -446,10 +446,10 @@ if ("`benchmark'" != "") {
 
 mata: printf("\n")
 if (`use_min') {
-	mata: printf("{txt}  Note: H0 = %g, q >= %g, alpha = %g, df = %g.\n", `h0', `q', `alpha', `ar_dof')
+	mata: printf("{txt}Note: H0 = %g, q >= %g, alpha = %g, df = %g.\n", `h0', `q', `alpha', `ar_dof')
 }
 else {
-	mata: printf("{txt}  Note: H0 = %g, q = %g, alpha = %g, df = %g.\n", `h0', `q', `alpha', `ar_dof')
+	mata: printf("{txt}Note: H0 = %g, q = %g, alpha = %g, df = %g.\n", `h0', `q', `alpha', `ar_dof')
 }
 
 // --- FS Section ---
@@ -462,13 +462,13 @@ mata: printf("{txt}  p-value:         {res}%6.4f\n", `fs_p')
 mata: printf("{txt}  Conf. Interval:  {res}[%6.4f, %6.4f]\n", `fs_lwr', `fs_upr')
 
 mata: printf("\n")
-mata: printf("{txt}  Sensitivity Statistics:\n")
+mata: printf("{txt}Sensitivity Statistics:\n")
 mata: printf("{txt}  Extreme Robustness Value:  {res}%6.4f\n", `xrv_fs')
 mata: printf("{txt}  Robustness Value:          {res}%6.4f\n", `rv_fs')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
-	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
+	mata: printf("{txt}Bounds on Omitted Variable Bias:\n")
 	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2dw.zx", "Lower CI", "Upper CI")
 	mata: printf("{txt}  {hline 63}\n")
 	local fs_nrows = rowsof(__ivsm_bounds_fs)
@@ -484,7 +484,7 @@ if ("`benchmark'" != "") {
 }
 
 mata: printf("\n")
-mata: printf("{txt}  Note: H0 = 0, q = 1, alpha = %g, df = %g.\n", `alpha', `fs_dof')
+mata: printf("{txt}Note: H0 = 0, q = 1, alpha = %g, df = %g.\n", `alpha', `fs_dof')
 
 // --- RF Section ---
 mata: printf("{txt}{hline 65}\n")
@@ -496,13 +496,13 @@ mata: printf("{txt}  p-value:         {res}%6.4f\n", `rf_p')
 mata: printf("{txt}  Conf. Interval:  {res}[%6.4f, %6.4f]\n", `rf_lwr', `rf_upr')
 
 mata: printf("\n")
-mata: printf("{txt}  Sensitivity Statistics:\n")
+mata: printf("{txt}Sensitivity Statistics:\n")
 mata: printf("{txt}  Extreme Robustness Value:  {res}%6.4f\n", `xrv_rf')
 mata: printf("{txt}  Robustness Value:          {res}%6.4f\n", `rv_rf')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
-	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
+	mata: printf("{txt}Bounds on Omitted Variable Bias:\n")
 	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2yw.zx", "Lower CI", "Upper CI")
 	mata: printf("{txt}  {hline 63}\n")
 	local rf_nrows = rowsof(__ivsm_bounds_rf)
@@ -518,7 +518,7 @@ if ("`benchmark'" != "") {
 }
 
 mata: printf("\n")
-mata: printf("{txt}  Note: H0 = 0, q = 1, alpha = %g, df = %g.\n", `alpha', `rf_dof')
+mata: printf("{txt}Note: H0 = 0, q = 1, alpha = %g, df = %g.\n", `alpha', `rf_dof')
 mata: printf("{txt}{hline 65}\n")
 mata: printf("\n")
 
