@@ -47,14 +47,14 @@ IV Estimates:
   Conf. Interval:  [0.0248, 0.2848]
 
   Sensitivity Statistics:
-    Extreme Robustness Value:  0.0005
-    Robustness Value:          0.0067
+  Extreme Robustness Value:  0.0005
+  Robustness Value:          0.0067
 
   Bounds on Omitted Variable Bias:
-    Bound Label          R2zw.x    R2y0w.zx    Lower CI    Upper CI
-    ---------------------------------------------------------------
-    1x black            0.00221     0.07500     -0.0212      0.4019
-    1x smsa             0.00639     0.02018     -0.0192      0.3958
+  Bound Label          R2zw.x    R2y0w.zx    Lower CI    Upper CI
+  ---------------------------------------------------------------
+  1x black            0.00221     0.07500     -0.0212      0.4019
+  1x smsa             0.00639     0.02018     -0.0192      0.3958
 
   Note: H0 = 0, q >= 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
@@ -66,14 +66,14 @@ First-Stage Estimates:
   Conf. Interval:  [0.1476, 0.4922]
 
   Sensitivity Statistics:
-    Extreme Robustness Value:  0.0031
-    Robustness Value:          0.0302
+  Extreme Robustness Value:  0.0031
+  Robustness Value:          0.0302
 
   Bounds on Omitted Variable Bias:
-    Bound Label          R2zw.x     R2dw.zx    Lower CI    Upper CI
-    ---------------------------------------------------------------
-    1x black            0.00221     0.03342      0.1089      0.5309
-    1x smsa             0.00639     0.00498      0.1202      0.5195
+  Bound Label          R2zw.x     R2dw.zx    Lower CI    Upper CI
+  ---------------------------------------------------------------
+  1x black            0.00221     0.03342      0.1089      0.5309
+  1x smsa             0.00639     0.00498      0.1202      0.5195
 
   Note: H0 = 0, q = 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
@@ -85,14 +85,14 @@ Reduced-Form Estimates:
   Conf. Interval:  [0.0066, 0.0775]
 
   Sensitivity Statistics:
-    Extreme Robustness Value:  0.0005
-    Robustness Value:          0.0067
+  Extreme Robustness Value:  0.0005
+  Robustness Value:          0.0067
 
   Bounds on Omitted Variable Bias:
-    Bound Label          R2zw.x     R2yw.zx    Lower CI    Upper CI
-    ---------------------------------------------------------------
-    1x black            0.00221     0.06566     -0.0042      0.0883
-    1x smsa             0.00639     0.01973     -0.0043      0.0884
+  Bound Label          R2zw.x     R2yw.zx    Lower CI    Upper CI
+  ---------------------------------------------------------------
+  1x black            0.00221     0.06566     -0.0042      0.0883
+  1x smsa             0.00639     0.01973     -0.0043      0.0884
 
   Note: H0 = 0, q = 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------

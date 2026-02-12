@@ -424,14 +424,14 @@ else if ("`ar_ci_type'" == "empty") {
 
 mata: printf("\n")
 mata: printf("{txt}  Sensitivity Statistics:\n")
-mata: printf("{txt}    Extreme Robustness Value:  {res}%6.4f\n", `xrv_iv')
-mata: printf("{txt}    Robustness Value:          {res}%6.4f\n", `rv_iv')
+mata: printf("{txt}  Extreme Robustness Value:  {res}%6.4f\n", `xrv_iv')
+mata: printf("{txt}  Robustness Value:          {res}%6.4f\n", `rv_iv')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
 	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
-	mata: printf("{txt}    %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2y0w.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}    {hline 63}\n")
+	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2y0w.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}  {hline 63}\n")
 	local iv_nrows = rowsof(__ivsm_bounds_iv)
 	forvalues i = 1(1)`iv_nrows' {
 		local blabel "`__ivsm_blbl_`i''"
@@ -439,7 +439,7 @@ if ("`benchmark'" != "") {
 		local b_c4 = __ivsm_bounds_iv[`i', 4]
 		local b_c5 = __ivsm_bounds_iv[`i', 5]
 		local b_c6 = __ivsm_bounds_iv[`i', 6]
-		mata: printf("{txt}    %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+		mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
 			substr("`blabel'", 1, 15), `b_c3', `b_c4', `b_c5', `b_c6')
 	}
 }
@@ -463,14 +463,14 @@ mata: printf("{txt}  Conf. Interval:  {res}[%6.4f, %6.4f]\n", `fs_lwr', `fs_upr'
 
 mata: printf("\n")
 mata: printf("{txt}  Sensitivity Statistics:\n")
-mata: printf("{txt}    Extreme Robustness Value:  {res}%6.4f\n", `xrv_fs')
-mata: printf("{txt}    Robustness Value:          {res}%6.4f\n", `rv_fs')
+mata: printf("{txt}  Extreme Robustness Value:  {res}%6.4f\n", `xrv_fs')
+mata: printf("{txt}  Robustness Value:          {res}%6.4f\n", `rv_fs')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
 	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
-	mata: printf("{txt}    %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2dw.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}    {hline 63}\n")
+	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2dw.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}  {hline 63}\n")
 	local fs_nrows = rowsof(__ivsm_bounds_fs)
 	forvalues i = 1(1)`fs_nrows' {
 		local blabel "`__ivsm_blbl_`i''"
@@ -478,7 +478,7 @@ if ("`benchmark'" != "") {
 		local b_c4 = __ivsm_bounds_fs[`i', 4]
 		local b_c5 = __ivsm_bounds_fs[`i', 5]
 		local b_c6 = __ivsm_bounds_fs[`i', 6]
-		mata: printf("{txt}    %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+		mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
 			substr("`blabel'", 1, 15), `b_c3', `b_c4', `b_c5', `b_c6')
 	}
 }
@@ -497,14 +497,14 @@ mata: printf("{txt}  Conf. Interval:  {res}[%6.4f, %6.4f]\n", `rf_lwr', `rf_upr'
 
 mata: printf("\n")
 mata: printf("{txt}  Sensitivity Statistics:\n")
-mata: printf("{txt}    Extreme Robustness Value:  {res}%6.4f\n", `xrv_rf')
-mata: printf("{txt}    Robustness Value:          {res}%6.4f\n", `rv_rf')
+mata: printf("{txt}  Extreme Robustness Value:  {res}%6.4f\n", `xrv_rf')
+mata: printf("{txt}  Robustness Value:          {res}%6.4f\n", `rv_rf')
 
 if ("`benchmark'" != "") {
 	mata: printf("\n")
 	mata: printf("{txt}  Bounds on Omitted Variable Bias:\n")
-	mata: printf("{txt}    %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2yw.zx", "Lower CI", "Upper CI")
-	mata: printf("{txt}    {hline 63}\n")
+	mata: printf("{txt}  %-15s  %10s  %10s  %10s  %10s\n", "Bound Label", "R2zw.x", "R2yw.zx", "Lower CI", "Upper CI")
+	mata: printf("{txt}  {hline 63}\n")
 	local rf_nrows = rowsof(__ivsm_bounds_rf)
 	forvalues i = 1(1)`rf_nrows' {
 		local blabel "`__ivsm_blbl_`i''"
@@ -512,7 +512,7 @@ if ("`benchmark'" != "") {
 		local b_c4 = __ivsm_bounds_rf[`i', 4]
 		local b_c5 = __ivsm_bounds_rf[`i', 5]
 		local b_c6 = __ivsm_bounds_rf[`i', 6]
-		mata: printf("{txt}    %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
+		mata: printf("{txt}  %-15s  {res}%10.5f  %10.5f  %10.4f  %10.4f\n", ///
 			substr("`blabel'", 1, 15), `b_c3', `b_c4', `b_c5', `b_c6')
 	}
 }
