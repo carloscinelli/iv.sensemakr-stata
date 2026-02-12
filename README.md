@@ -30,10 +30,10 @@ net install ivsensemakr, all replace force from("https://raw.githubusercontent.c
 // Load dataset (Card, 1995)
 use card.dta, clear
 
-// Run sensitivity analysis with benchmark covariates
+// Generate contour plots of adjusted confidence interval limits
 ivsensemakr lwage educ nearc4 exper expersq black south smsa ///
     reg661 reg662 reg663 reg664 reg665 reg666 reg667 reg668 smsa66, ///
-    benchmark(black smsa)
+    benchmark(black smsa) contourplot clim(0 0.09)
 ```
 
 Output:
@@ -42,79 +42,62 @@ Output:
 Sensitivity Analysis for Instrumental Variables
 (Anderson-Rubin Approach)
 -----------------------------------------------------------------
+IV Estimates (lwage ~ educ | nearc4, ...):
+  Coef. Estimate:   0.1315
+  Conf. Interval:  [ 0.0248,  0.2848]
 
-IV Estimates:
-  Coef. Estimate:     0.1315
-  Conf. Interval: [    0.0248,     0.2848]
-  Note: H0 =  0.000, alpha = 0.05, df =  2994
+  Sensitivity Statistics:
+    Extreme Robustness Value:   0.0005
+    Robustness Value:           0.0067
 
+  Bounds on Omitted Variable Bias:
+    Bound Label          R2zw.x    R2y0w.zx    Lower CI    Upper CI
+    ---------------------------------------------------------------
+    1x black            0.00221     0.07500     -0.0212      0.4019
+    1x smsa             0.00639     0.02018     -0.0192      0.3958
+
+  Note: H0 = 0, q >= 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
+First-Stage Estimates (educ ~ nearc4 | ...):
+  Coef. Estimate:   0.3199
+  Standard Error:   0.0879
+  t-value:          3.6408
+  p-value:          0.0003
+  Conf. Interval:  [ 0.1476,  0.4922]
 
-Sensitivity Statistics:
-                   |   Estimate      XRV_qa       RV_qa
-  ----------------+------------------------------------
-                IV |     0.1315    0.000523    0.006666
-       First-Stage |     0.3199    0.003129    0.030231
-      Reduced-Form |     0.0421    0.000523    0.006666
+  Sensitivity Statistics:
+    Extreme Robustness Value:   0.0031
+    Robustness Value:           0.0302
 
-  Note: q >= 1.00, alpha = 0.05
+  Bounds on Omitted Variable Bias:
+    Bound Label          R2zw.x     R2dw.zx    Lower CI    Upper CI
+    ---------------------------------------------------------------
+    1x black            0.00221     0.03342      0.1089      0.5309
+    1x smsa             0.00639     0.00498      0.1202      0.5195
 
+  Note: H0 = 0, q = 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
+Reduced-Form Estimates (lwage ~ nearc4 | ...):
+  Coef. Estimate:   0.0421
+  Standard Error:   0.0181
+  t-value:          2.3271
+  p-value:          0.0200
+  Conf. Interval:  [ 0.0066,  0.0775]
 
-First-Stage Estimates (D ~ Z | X):
-  Coef. Estimate:     0.3199
-  Standard Error:     0.0879
-  t-value:            3.6408
-  p-value:          0.000276
-  Conf. Interval: [    0.1476,     0.4922]
+  Sensitivity Statistics:
+    Extreme Robustness Value:   0.0005
+    Robustness Value:           0.0067
 
-Reduced-Form Estimates (Y ~ Z | X):
-  Coef. Estimate:     0.0421
-  Standard Error:     0.0181
-  t-value:            2.3271
-  p-value:          0.020028
-  Conf. Interval: [    0.0066,     0.0775]
------------------------------------------------------------------
+  Bounds on Omitted Variable Bias:
+    Bound Label          R2zw.x     R2yw.zx    Lower CI    Upper CI
+    ---------------------------------------------------------------
+    1x black            0.00221     0.06566     -0.0042      0.0883
+    1x smsa             0.00639     0.01973     -0.0043      0.0884
 
-Bounds on Omitted Variable Bias (IV):
-  Bound Label     |     R2zw.x    R2y0w.zx    Lower CI    Upper CI
-  ---------------+------------------------------------------------
-  1x black        |    0.00221     0.07500     -0.0212      0.4019
-  1x smsa         |    0.00639     0.02018     -0.0192      0.3958
-
-Bounds on Omitted Variable Bias (First-Stage):
-  Bound Label     |     R2zw.x     R2dw.zx    Lower CI    Upper CI
-  ---------------+------------------------------------------------
-  1x black        |    0.00221     0.03342      0.1089      0.5309
-  1x smsa         |    0.00639     0.00498      0.1202      0.5195
-
-Bounds on Omitted Variable Bias (Reduced-Form):
-  Bound Label     |     R2zw.x     R2yw.zx    Lower CI    Upper CI
-  ---------------+------------------------------------------------
-  1x black        |    0.00221     0.06566     -0.0042      0.0883
-  1x smsa         |    0.00639     0.01973     -0.0043      0.0884
-
+  Note: H0 = 0, q = 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
 ```
 
-# Contour Plots
-
-```stata
-// Generate contour plots of adjusted confidence interval limits
-ivsensemakr lwage educ nearc4 exper expersq black south smsa ///
-    reg661 reg662 reg663 reg664 reg665 reg666 reg667 reg668 smsa66, ///
-    benchmark(black smsa) contourplot clim(0 0.09)
-```
 <p align = "center">
 <img src="misc/contourplot.png" width="75%">
-</p>
-
-```stata
-// Generate t-contour plot
-ivsensemakr lwage educ nearc4 exper expersq black south smsa ///
-    reg661 reg662 reg663 reg664 reg665 reg666 reg667 reg668 smsa66, ///
-    benchmark(black smsa) tcontourplot clim(0 0.09)
-```
-<p align = "center">
-<img src="misc/tcontourplot.png" width="75%">
 </p>
