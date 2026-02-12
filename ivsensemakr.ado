@@ -213,10 +213,10 @@ mata: printf("{txt}{hline 65}\n")
 mata: printf("\n{txt}IV Estimates:\n")
 mata: printf("{txt}  Coef. Estimate: {res}%10.4f\n", `iv_estimate')
 if ("`ar_ci_type'" == "bounded") {
-	mata: printf("{txt}  Conf. Interval: {res}[%10.4f, %10.4f]\n", `ar_ci_lwr', `ar_ci_upr')
+	mata: printf("{txt}  Conf. Interval: {res}[%7.4f, %7.4f]\n", `ar_ci_lwr', `ar_ci_upr')
 }
 else if ("`ar_ci_type'" == "disjoint") {
-	mata: printf("{txt}  Conf. Interval: {res}(-inf, %10.4f] U [%10.4f, +inf)\n", `ar_ci_lwr', `ar_ci_upr')
+	mata: printf("{txt}  Conf. Interval: {res}(-inf, %7.4f] U [%7.4f, +inf)\n", `ar_ci_lwr', `ar_ci_upr')
 }
 else if ("`ar_ci_type'" == "all_reals") {
 	mata: printf("{txt}  Conf. Interval: {res}(-inf, +inf)\n")
@@ -250,14 +250,14 @@ if ("`suppress'" == "") {
 	mata: printf("{txt}  Standard Error: {res}%10.4f\n", `fs_se')
 	mata: printf("{txt}  t-value:        {res}%10.4f\n", `fs_t')
 	mata: printf("{txt}  p-value:        {res}%10.6f\n", `fs_p')
-	mata: printf("{txt}  Conf. Interval: {res}[%10.4f, %10.4f]\n", `fs_lwr', `fs_upr')
+	mata: printf("{txt}  Conf. Interval: {res}[%7.4f, %7.4f]\n", `fs_lwr', `fs_upr')
 
 	mata: printf("\n{txt}Reduced-Form Estimates (Y ~ Z | X):\n")
 	mata: printf("{txt}  Coef. Estimate: {res}%10.4f\n", `rf_coef')
 	mata: printf("{txt}  Standard Error: {res}%10.4f\n", `rf_se')
 	mata: printf("{txt}  t-value:        {res}%10.4f\n", `rf_t')
 	mata: printf("{txt}  p-value:        {res}%10.6f\n", `rf_p')
-	mata: printf("{txt}  Conf. Interval: {res}[%10.4f, %10.4f]\n", `rf_lwr', `rf_upr')
+	mata: printf("{txt}  Conf. Interval: {res}[%7.4f, %7.4f]\n", `rf_lwr', `rf_upr')
 }
 
 mata: printf("{txt}{hline 65}\n")
