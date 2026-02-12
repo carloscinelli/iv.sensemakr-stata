@@ -1298,19 +1298,26 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 	b_vec = 2 * rho * rf_se * fs_se :* t_dagger:^2 :- 2 * rf_coef * fs_coef
 	c_vec = rf_coef^2 :- rf_se^2 :* t_dagger:^2
 	delta_vec = b_vec:^2 :- 4 :* a_vec :* c_vec
-	result = J(n_total, 1, .)
 
 	if (ci_limit == "lwr") {
+		result = J(n_total, 1, -1e20)  // default = -Inf (a <= 0 case)
 		for (i = 1; i <= n_total; i++) {
 			if (a_vec[i] > 0 & delta_vec[i] >= 0) {
 				result[i] = (-b_vec[i] - sqrt(delta_vec[i])) / (2 * a_vec[i])
 			}
+			else if (a_vec[i] > 0) {
+				result[i] = .  // no real root
+			}
 		}
 	}
 	else {
+		result = J(n_total, 1, 1e20)  // default = +Inf (a < 0 case)
 		for (i = 1; i <= n_total; i++) {
 			if (a_vec[i] > 0 & delta_vec[i] > 0) {
 				result[i] = (-b_vec[i] + sqrt(delta_vec[i])) / (2 * a_vec[i])
+			}
+			else if (a_vec[i] > 0) {
+				result[i] = .  // no real root
 			}
 		}
 	}
@@ -1344,7 +1351,7 @@ void __ivsm_contour_plot_iv(real scalar fs_coef, real scalar fs_se,
 	obs_value = __ivsm_iv_adjusted_limit(fs_coef, fs_se, rf_coef, rf_se,
 										  rho, dof, 0, 0, alpha, ci_limit)
 
-	finite_z = select(result, result :< .)
+	finite_z = select(result, result :< . :& result :> -1e19 :& result :< 1e19)
 	has_inf = (length(finite_z) < n_total)
 	n_finite = length(finite_z)
 	if (n_finite > 0) {
