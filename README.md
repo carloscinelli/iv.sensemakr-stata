@@ -98,6 +98,10 @@ Note: H0 = 0, q = 1, alpha = .05, df = 2994.
 -----------------------------------------------------------------
 ```
 
+# Acknowledgements
+
+This research was supported in part by the National Science Foundation Grant No. MMS-2417955.
+
 <p align = "center">
 <img src="misc/contourplot.png" width="75%">
 </p>
